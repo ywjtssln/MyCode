@@ -1,0 +1,85 @@
+                                       关于2440核心板linux下的简单烧写说明
+							                		V1.0 by zy
+
+一.准备工作
+
+  这里以monitor为例，简要说明如何在Linux下向一块全新的2440核心版中烧写所需的UBOOT，内核，文件系统。2440开
+  发板提供的资料中有完整的说明如何在WINDOWS下如何烧写的文档，如有需要请自行查阅《TQ2440开发板使用手册》。
+
+  硬件需求：PC，2440开发板，或有调试串口和网络的底板+核心板，相关连接线。
+  软件需求：linux操作系统，终端串口软件，我们这里使用的是minicom，PC机中需要有tftp协议；核心板的NOR FLASH
+  或者NAND FLASH中要有默认的UBOOT，如果都没有，则只有在WINDOWS下使用烧写工具烧写UBOOT。
+
+  这里以NAND FLASH 256M为例，地址分布为：
+  0x00000000~0x00040000     uboot
+  0x00200000~0x00400000     linux
+  0x00400000~0x0ff80000     文件系统
+
+  PS：一般默认前2M地址存放UBOOT，启动LOGO；2M到4M存放内核；剩下的空间为文件系统。
+
+  将需要烧写的UBOOT，内核，和文件系统（文件系统为使用makeyaffs2image或相应工具制作的镜像文件，也可使用
+  NFS挂载NAND后自己COPY文件系统，不过这样比较繁琐）。放在 /tftpboot/ 文件夹下供tftp协议使用。假设3个文件
+  文件名分别为：uboot.bin linux yaffs.bin
+
+  连接好PC和开发板，准备工作完成。
+
+
+二.烧写工作
+  
+  1.默认的UBOOT一般在NOR FLASH和NAND FLASH中都有，这里选择从NOR FLASH启动，如果都没有UBOOT，参考软件需求。
+  2.启动后会有选择菜单，这是天嵌工作人员自己写的，用于简化功能实现，我们无视它，按“q”两次退出，到UBOOT命
+  令行界面。
+
+  		这里简单说明一下烧写用到的UBOOT命令：
+
+  		tftp 将PC的/tftpboot/目录下的文件COPY到开发板的SDRAM中，
+  		例如：  tftp 30008000 linux.img     
+  		本指令是将/tftpboot/下的linux.img文件COPU到开发板的30008000开始地址中
+
+  		nand erase  
+ 	    nand write
+    	nand write.yaffs 
+ 	    以上三个是nand操作指令，NAND FLASH本身性质决定，烧写某部分前需要先擦除那个部分。
+
+  		例如：  nand erase 200000 200000   
+ 		本指令将擦写从200000地址开始的长度为200000字节的内容，若不加后面的参数，则默认擦写整个NAND。此处200000为16进制。
+
+  		例如：  nand write 30008000 400000 200000
+  		本指令将30008000地址开始的200000字节的内容COPY到400000地址，参数同样为16进制。nand write.yaffs用于写yaffs文件系
+  		统， 使用方法类似nand write。
+
+
+  3.UBOOT烧写
+
+    如果需要烧写整个NAND FLASH，这里使用：
+  			nand erase 
+	一次性擦除整个NAND，减少擦写次数。
+
+	如果只烧写UBOOT，依次输入指令：
+	        nand erase 0 200000
+			tftp 30008000 uboot.bin
+			nand write 30008000 0 uboot文件大小
+	
+    PS:使用tftp时，加载完成后会看见所加载的16进制文件大小，这个数据正好可以用在nand write的最后一个参数上，使用后可能提示
+	边界错误，向上取整即可，例如：文件大小为fc430,改成fd000,或者更大。
+
+  4.linux烧写
+
+    类似UBOOT，依次输入指令：
+	       nand erase 200000 200000
+		   tftp 30008000 linux
+		   nand write 30008000 200000 linux文件大小（或者200000)
+	
+    PS:若烧写整个NAND，且在前面已经擦除过整个NAND，这里可跳过擦除指令。
+
+   5.文件系统烧写
+
+    依次输入指令：
+		   nand erase 400000
+		   tftp 300000000 yaffs.bin
+		   nand write.yaffs 30000000 400000 yaffs.bin文件大小
+
+    PS:若烧写整个NAND，且在前面已经擦除过整个NAND，这里可跳过擦除指令。
+
+
+

@@ -1,0 +1,875 @@
+/*
+ * FILE: 监护仪样机设计.txt
+ * LOG:2009年06月07日 星期日 14时19分12秒
+ *     在完成初步之后，重新通篇修改
+ * 
+ * zhs
+ *
+ * V1.1 2009.8.11 modified by zy
+ */
+题目：监护仪样机设计
+
+一，概述
+        本文叙述了监护仪样机设计开发的各个步骤，主要包括需求分析、总体设计方案、硬件设计、开发环境搭建、软件设计以及调试。
+        其中详细地讲述了监护仪主机开发的软件部分，包括：开发环境搭建、软件设计以及调试。其他部分则做介绍性说明。
+        本文的另一个目的是希望读者能够通过本文了解嵌入式开发（主要是软件相关部分）的大致流程和模式，这些对于其它嵌入式项目开发同样有帮助。
+        
+
+/****************************************************************************************/
+
+二，需求分析
+        监护仪主要用于各个医院的临床科室，同时监护病人的心电图、呼吸、无创血压值、脉搏氧饱和度值、脉搏以及体温六个生理参数。
+        通过心电电缆、血压袖带、血氧探头和体温传感器采集病人的生理参数，传输到监护仪主机，由主机通过12.1寸LCD屏幕显示各种波形以及特征值。
+        要求监护仪主要的功能如下：
+                1，中、英文界面操作可选；
+                2，12.1液晶屏实时显示病人的心电波形、呼吸波形和脉搏氧波形；
+                3，AC/DC供电，并实时监测电池电量，当电量不足时，LCD显示低电量报警提示；
+                4，波形画面具有冻结以及ST段分析功能；
+                5，心率、体温、脉搏氧饱和度、呼吸率、无创血压趋势统计，存储及显示96小时趋势数据；
+                6，存储心律失常事件波形数据以及此时的心率、体温、脉搏氧饱和度和呼吸率，并能回放查看；
+                7，能够回放5分钟的心电波形数据及心率值、体温、脉搏氧饱和度和呼吸率；
+                8，提供手动、定时自动无创血压测量；
+                9，各个特征值报警上、下限设置；
+                10，通过菜单设置“成人/儿童/新生儿”，适用于成人、儿童和新生儿患者；
+                11，内置打印机，打印各种生理参数数据和波形；
+                12，简易面板输入，能够进行窗口切换，菜单选择等操作。
+        监护仪运行环境为室内，温度、湿度等环境条件相对稳定，平时使用AC供电。操作人员为医生以及护士。
+
+        需求分析规格如下：
+        /*TODO:利用表格表示*/
+                名称：监护仪样机
+                目的：监护病人多个生理参数；
+                输入：各探头和传感器采集的数据，简易面板键盘输入；
+                输出：LCD上显示波形和特征值数据，扬声器输出脉搏音和警报音，打印输出；
+                成本：样机设计，3000－4000 RMB； //TODO
+                数量：样机；
+                运行环境：室内，医护人员操作；
+                功耗：主要AC供电，提供DC供电；
+                物理尺寸：长500mmX宽320mmX高460mm;
+                重量：主机重量10Kg左右。
+
+
+/***********************************************************************************************/
+
+三，总体设计方案
+        通过以上需求分析，可以采取的硬件方案包括：
+                1，使用x86架构主板作为主机，购买各种生理参数采集模块，通过RJ45或者RS232和主机通信；
+                2，自己设计生理参数采集模块，使用x86主板作为主机，通过RS232通信；
+                3，自己设计生理参数采集模块，使用ARM为处理器，自己设计主机；
+                4，使用ARM处理器同时完成数据采集模块以及主机数据存储管理和显示；
+        因为是样机设计，以实现和完善系统功能为主要目的，同时也为以后批量生产考虑。如果采用x86作为主机架构，则将来批量成本较高，而采用ARM架构作为主机CPU，在以后批量生产时，通过选择合适的ARM架构CPU，可以降低成本。且由于采用了Linux操作系统作为主机运行平台，使得样机设计阶段得到的技术和代码可以在选择新的ARM处理器之后平滑移植。通过自己设计生理参数采集模块可以降低成本，且各种可以实验自己设计的各种算法。因此可以摈弃采用x86架构的方案。如果只由ARM完成所有功能更好，但是因为是样机设计阶段，以完成功能为主，可以将参数采集和主机存储数据管理和显示分开来设计。一方面两个部分可以同时开发，加快开发速度；另一方面，外部采集模块需要复杂算法分析数据，而主机又需要实时显示波形数据，因此由外部单片机分担一部分工作，可以使主机实时性更好。如果样机开发阶段的外部算法成熟之后，可以选择高性能的ARM处理器完成所有工作，这样可以减小体积以及成本。因此本项目采用方案3。
+
+        以下为根据方案3得到的整体系统模块图：
+        /*TODO:整体系统模块图*/
+        该方案采用ARM处理器作为主机处理器。主机运行监护应用程序，通过串口与下位机通信，一方面接收下位机采集的各种参数数据，并存储和显示；一方面将用户通过程序界面对硬件的配置发送至下位机。下位机部分分为五个模块：心电模块、血氧模块、血压模块、键盘模块以及传输板模块。其中心电模块、血氧模块和血压模块由单片机分别采集数据和控制相应的外部硬件设备，并将数据提交给传输板；键盘模块为一个简易键盘模块，接收用户的输入，将相应的键盘码提交给传输板；传输板汇总数据，进行协议打包，每100ms将三个模块的数据包通过串口以波特率115200传输至上位机，同时传输板也接受上位机发送的设置命令，按协议解包之后将命令再发送至相应模块。
+
+        这里再说明一下主机的模块划分：
+        /*TODO:上位机硬件模块图*/
+        根据功能分析，上位机硬件主要包括处理器部分、存储器部分、LCD显示部分、电源部分、串口部分、RTC部分、扬声器部分和打印部分。其中，扬声器和打印机可以直接购买已有的产品，其他部分的硬件自己设计。同时为了调试方便，应该有调试接口和网络模块。       
+        从数据流的角度分析，上位机的输入数据有生理参数数据、面板键盘输入数据和RTC；输出有上位机设置命令、LCD显示数据、蜂鸣器信号和RTC。其中，参数数据、面板键盘数据和上位机设置命令数据均由串口传输。
+
+        软件的模块划分由Bootloader、Linux操作系统、相应驱动和应用程序组成。Bootloader负责初始化硬件和引导操作系统；Linux进行进程调度和系统资源管理；应用程序管理参数数据和与用户进行交互，并调用相应的驱动控制硬件，比如打印等操作。
+        /*TODO:软件层次图*/
+
+
+/************************************************************************************************/
+
+四，硬件设计
+        这里主要说明上位机的硬件设计。
+        /*TODO:这里的硬件说明以PCB和原理图为最终参考，可能这里会有出入*/
+        上位机硬件中，首先是CPU的选择。本项目中选择了Atmel的AT91rm9200处理器。9200主频有180MHz，这样保证了心电波形每10ms刷新两点数据的要求；920T内核，具备MMU，能够跑Linux操作系统，应用程序的编写和初期调试能够和硬件设计同步进行，节省开发时间；外部总线接口支持SDRAM、NOR Flash和NAND Flash；有JTAG，DEGUG COM和10/100 BASE-T网口，调试条件齐全；内置PWM，用于控制扬声器；四个32为IO控制器，128个可编程IO口线。因为是样机设计，所以选择功能稍强的处理器。
+
+        存储器部分包括：SDRAM、NOR Flash和NAND Flash。
+        SDRAM方面，采用两片共64M的HY57V561620T。考虑到要运行Linux操作系统嗯，且应用程序中需要能够存储趋势数据达96小时的空间，因此选择了大容量的SDRAM。
+        NOR Flash，采用了8M的SST39VF6401B，用来保存bootloader和系统内核。
+        NAND Flash，采用一片32M的K9F5608U0A，用来保存YAFFS的根文件系统。根文件系统中应用程序使用的是动态链接库，因此空间需要较大。同时，NAND Flash保证了用户对于监护仪的配置在掉电之后不会丢失。
+        根据9200的存储器配置，有如下存储地址空间：
+                0x1000,0000--0x1FFF,FFFF 为NOR Flash(8M/256M);
+                0x2000,0000--0x2FFF,FFFF 为SDRAM(64M/256M);
+                0x4000,0000--0x4FFF,FFFF 为NAND Flash(32M/256M).
+
+        网络部分，使用DM9161作为以太网的物理层。DM9161是一款低功耗、高性能的CMOS芯片,支持10M和100M的以太网传输，它起编码、译码输入和输出数据的作用。
+        这里的网络采用的是简化独立媒体接口(RMII)。使用2位进行发送，2位进行接收。一个发送使能，一个接收错误，一个猜博敏感和一个对于100Mb/s数据率的50MHz参考时钟。
+
+        因为9200内部没有集成LCD控制器，因此需要配备专用的显示控制器，才能实现LCD显示。这里选择了EPSON公司的S1D13506。并且使用ICS1523为其提供视频同步信号，这些信号是S1D13506连接LCD所需要的。屏幕选择12.1英寸的NEC公司的NL8060BC31。
+
+        串口部分，使用MAX3223实现USART0的通信和UART DEBUG调试通道。其中USART0即用来与下位机进行数据通信。
+
+        实时时钟部分使用RTC芯片DS1302，使用钮扣电池保持计时。并且通过9200的IO口通过驱动模拟时序对其进行读写。
+
+        扬声器部分通过9200内置的PWM外设产生一定频率信号驱动外置扬声器，发出不同的声音。
+
+        打印机选用思普瑞特公司的SP-RMBP-3打印机，通过9200的IO引脚模拟时序驱动打印机。
+
+        以上各部分具体电路参看protel文件。
+
+
+/**************************************************************************************************/
+
+五，嵌入式环境设计和实现
+        这一部分是各个嵌入式项目中有共性的地方。虽然不同的项目硬件需求不一样，应用程序软件设计不一样，但是底层硬件和上层软件之间的部分是十分相似的。
+        这部分包括了Bootloader、操作系统内核、根文件系统、调试环境以及MiniGUI环境的搭建。
+        这里宿主机为PC，操作系统为ubuntu 8.04，而在使用ADS时切换到Windows系统下。宿主机的IP为：192.168.0.187，目标板的IP为：192.168.0.11。
+        假设前提：读者对于Linux下的命令使用熟悉，对Makefile熟悉。
+
+        首先为了能够得到Bootloader、内核和文件系统，需要先建立交叉编译环境和辅助环境。
+        1，arm-linux-gcc交叉编译环境的获得和搭建；
+           建立交叉编译环境可以自己下载交叉编译工具链binutils，gcc-core，gcc-g++，glibc，glibc-linuxthreads，自己编译建立；
+           这里直接下载编译好的交叉编译环境cross-tools：cross-2.95.3.tar.bz2和cross-3.4.1.tar.bz2。/*TODO:附件中给出*/
+           这里2.95.3用于编译U-boot，而3.4.1用于编译内核、busybox和其他工具。
+           这里可以直接将cross-2.95.3.tar.bz2和cross-3.4.1.tar.bz2解压至/usr/local/arm/，并且在bash的配置文件~/.bashrc中将路径添加进PATH：
+           export PATH=$PATH:/usr/local/arm/3.4.1/bin
+           Linux内核选择使用linux-2.6.20。
+           busybox选择busybox-1.01。
+        2，ADS的使用。用于烧写。FlashDown程序说明；
+           ADS运行在Windows下面。可以通过JTAG口直接在服务端运行并查看、调试程序，所运行的程序大部分都直接控制ARM而没有操作系统，这里的FlashDown即是这样。
+           这里的FlashDown程序运行之后，首先初始化相应的硬件，然后擦除NOR Flash，接下来可以顺序根据程序中的地址和大小三次写NOR Flash。
+           这里三次可分别用来烧写U-boot、内核镜像以及根文件系统。
+           /*TODO:附件中给出*/
+        3，宿主机tftp的搭建；
+           使用用tftp下载内核映象，可以方便调试，不用每次都将内核烧进Flash中。
+            (1)、sudo apt-get install tftp tftpd;
+                 安装服务包，其实有三种tftp的，这里使用这个；
+            (2)、sudo apt-get install netkit-inetd，即选择安装openbsd-inetd;
+            (3)、建立一个tftpboot文件夹，这里是在宿主机的/下建的。说是可以通过配置文件可以在任何位置建也可以找到，但这边好像不行。
+                 sudo chmod 777 tftpboot(改变权限，全7，无所谓了)；
+            (4)、修改配置文件/etc/inetd.conf，加入“tftp dgr am udp wait nobody /usr/sbin/tcpd /usr/sbin/in.tftpd /tftpboot”，保存。
+                 重启，就可以了。
+        4，宿主机nfs的搭建；
+           通过nfs挂载文件系统，就可以避免每次调试应用程序时都要重新制作和烧写文件系统。
+           nfs系统是一个网络文件系统，在嵌入式中使用该文件系统，可以方便调试。
+           (1)，sudo apt-get install nfs-kernel-server,
+                sudo apt-get install nfs-common。
+                开启相应的服务。
+           (2)，sudo vim /etc/exports加入共享目录，在该文件中添加“/home/zhs/workspace/arm-linux/rootfs *(rw,sync,subtree_check,no_root_squash)”；
+                其中rootfs即为嵌入式系统启动之后的根目录/。
+           (3)，/etc/init.d/nfs-kernel-server stop,
+                /etc/init.d/nfs-kernel-server start。
+           (4)，为了能够以nfs启动，需要修改uboot相应的参数
+                setenv bootargs root=/dev/nfs nfsroot=主机ip:/home/rootfs ip=开发板ip:主机ip:主机ip:255.255.255.0 console=tty ttyS0,115200 mem=64M。
+                这里的配置就是：bootargs root=/dev/nfs nfsroot=192.168.0.187:/home/zhs/workspace/arm-linux/rootfs ip=192.168.0.11:192.168.0.187:192.168.0.187:255.255.255.0 console=tty0 ttyS0,115200 mem=64M。
+           (5)，开通nfs之后开始建立根目录：
+                <1>，建立文件夹rootfs/作为文件系统的根目录。首先建立根目录下的必需的顶层目录：
+                        mkdir bin dev etc lib proc sbin mnt
+                     其中mnt不是必需的，是用来挂载YAFFS2/NAND Flash用的。
+                <2>，/dev目录设计：
+                     该目录下放置Linux系统需要的设备文件，首先建立一些系统基本的设备文件，监护仪所需要的特殊设备文件在驱动部分说明和建立：
+                        mknod -m 600 mem c 1 1
+                        mknod -m 600 console c 5 1
+                        mknod -m 600 tty0 c 4 0
+                        mknod -m 666 tty c 5 0
+                        mknod -m 666 ram b 1 0
+                        mknod -m 600 ttyS0 c 4 64
+                <3>，/etc目录设计：
+                     该目录下包含系统的配置文件。在嵌入式应用中，下面三个文件一般是必备的，其他文件可以根据自己系统的需求添加。
+                     a，/etc/init.d/rcS
+                        该脚本用来执行开机自动启动的服务，这里基本内容如下：
+                         #!/bin/sh
+                        /bin/mount -n -o remount,rw /
+                        /bin/mount /proc
+                     b，/etc/fstab
+                        该脚本在系统启动时安装文件系统清单，其中默认必须有proc文件系统：
+                         #这里根目录系统在实际应用中需修改为YAFFS2，这里为nfs调试用
+                        /dev/ram / ext2 defaults 0 1
+                        none /proc proc defaults 0 0
+                     c，/etc/inittab
+                        init是Linux系统运行的所有其他进程的父进程，这个文件提供init进程的参数：
+                        ::sysinit:/etc/init.d/rcS
+                        ::askfirst:/bin/sh
+                        ::ctrlaltdel:/sbin/reboot
+                        ::shutdown:/sbin/swapoff -a
+                        ::shutdown:/bin/umount -a -r
+                        以上三个文件具体的参数意义可以参看实验室的“嵌入式Linux技术手册”。
+                <4>，/lib目录设计：
+                     /lib目录下存放必须的共享库以及转载程序，里面的基本动态链接库可以由cross-tools-3.4.1内的lib目录下拷贝到这里。
+                     这里拷贝的系统基本库如下：
+                     ld-2.3.2.so, ld-linux.so.2, libc-2.3.2.so, libcrypt.so.1, libc.so, libc.so.6, libm-2.3.2.so, libm.so, libm.so.6, libpthread-0.10.so
+                     libpthread.so, libpthread.so.0, libthread_db-1.0.so, libthread_db.so, libthread_db.so.1
+                     如果应用程序需要一些特别的库，比如gmp库，则需要再将其拷贝到这里。但一般库文件越少越好，这样可以减小文件系统体积。
+                     /*TODO:可能有些库是冗余的*/
+                     另外，应用程序为MiniGUI程序，因此MiniGUI的动态链接库也应该拷贝到这里。拷贝那些在后面MiniGUI环境搭建中说明。
+                <5>，/bin、/sbin目录设计：
+                     这两个目录存放一般系统调用程序，而这些程序在这里采用busybox实现。
+                     移植busybox:
+                     a，得到busybox源代码，这里为busybox-1.01.tar.gz；
+                     b，解压到目录下，使用make menuconfig 进行配置，选择需要的功能，同时指定交叉编译器。具体配置参看“嵌入式Linux技术手册”；
+                     c，编译：make，安装：make install。
+                     d，在busybox目录下生成一个_install目录，里面有bin目录、sbin目录和指向busybox可执行文件的链接linuxrc，将这些文件至rootfs/目录下。
+
+        搭建好基本环境之后，便可以开始各个部分的搭建了。
+        首先是Bootloader。
+        Bootloader是硬件系统上电之后首先执行的程序，因此应该其执行程序代码应该位于硬件系统上电后地址空间的0x0000,0000处。根据9200的地址配置和上电情况可知，将其放在NOR Flash的零地址处即可。
+        这里我们选用U-boot作为系统的Bootloader。它负责系统上电之后的初始化以及对操作系统的引导。
+        为了使用U-boot，首先得将其移植到ARM平台上。
+                1，获取源代码。这里使用的是U-boot-1.1.2，可以到官方网站上下，为开源软件；/*TODO:附件中给出*/
+                2，修改源代码。为了移植，需要修改源代码，使得U-boot能够正确识别我们板子上的硬件从而能够正常初始化硬件系统并顺利引导操作系统。
+                   /*TODO:这里给出的步骤为“嵌入式Linux技术手册”中给出的，具体意义和注意事项请参考手册*/
+                   下面我们来对U-Boot程序作具体的修改：
+                   (1)：打开 include/configs/AT91RM9200dk.h:
+                        <1>，将 #undef CONFIG_BOOTBINFUNC 改为 
+                        #define CONFIG_BOOTBINFUNC
+                        从1.1.2开始，u-boot有初始化SDRAM并拷贝自己到SDRAM运行的代码，而之前的版本就没有这个功能，定义了CONFIG_BOOTBINFUNC则使能这部分代码。CONFIG_BOOTBINFUNC主要在U-Boot的第一个执行文件cpu/ AT91RM9200/start.s中有使用；在本文件中定义U-Boot、环境变量在FLASH中的存储地址时也有涉及。
+                        <2>，在 #define CFG_MALLOC_LEN	(CFG_ENV_SIZE + 128*1024) 前面一行添加
+                        #define CFG_MONITOR_LEN	(256*1024)  /* Reserve 256 kB for Monitor */
+                        <3>，将 #define PHYS_SDRAM_SIZE 0x2000000  /* 32 megs */ 改为
+                                #define PHYS_SDRAM_SIZE 0x4000000  /* 64 megs */ 
+                        本目标板中SDRAM的大小为64M BYTE；
+                        <4>，将 #define PHYS_FLASH_SIZE	0x200000  /* 2 megs main flash */ 改为
+                                #define PHYS_FLASH_SIZE 0x800000  /* 8 megs main flash */
+                        本目标板中Nor Flash的大小为8M BYTE；
+                        <5>,将 #define CFG_MAX_FLASH_SECT 256 改为
+                                #define CFG_MAX_FLASH_SECT 2048 
+                        SST39VF6401B的扇区数为2048个；
+                        <6>,将 #define CFG_PROMPT "U-Boot> "改为
+                               #define CFG_PROMPT "yourname_U-Boot> "
+                        这里不改也没有什么关系，更改主要为了识别这是你修改后的U-Boot。
+                        <7>,添加 #define    CFG_LONGHELP  1 
+                        该处定义的作用是在U-Boot下输入help命令时，可得到详细的命令解释。               
+                        include/configs/AT91RM9200dk.h修改完毕，保存退出。
+                   (2)：打开 include/flash.h:
+                        <1> 在 #define SST_ID_xF6401 0x236B236B	/* 39xF6401 ID (64M =	4M x 16 ) */
+                        下添加如下一行：
+                                #define SST_ID_xF6401B	0x236D236D 	/* 39xF6401B ID (64M =	4M x 16 )*/
+                        (如果FLASH型号为SST39VF6401，则无需添加这一句)
+                   (3)：打开 board/AT91RM9200dk/flash.c:
+                        <1> 在 OrgDef OrgAT49BV6416[] =
+                        {
+                               {   8,  8*1024 },	/*   8 *  8 kBytes sectors */
+                               { 127, 64*1024 },	/* 127 * 64 kBytes sectors */
+                        };
+                        下面添加如下几行：
+                        gDef OrgSST39VF6401B[] = 
+                        {
+                                {2048,4*1024}, /*   2048 *  4 kBytes sectors */
+                        };
+                        此处表示 SST39VF6401B的扇区数为2048个，每个扇区的大小为 4K BYTE;该处数字来源见SST39VF6401B的Datasheet.
+                        <2> 将void flash_identification (flash_info_t * info)函数里的如下两行 用 /* */屏蔽掉，
+                        info->flash_id = ATM_MANUFACT & FLASH_VENDMASK;   
+                        printf ("Atmel: ");  
+                        在下面添加如下两行：   
+                        info->flash_id = SST_MANUFACT & FLASH_VENDMASK;   
+                        printf ("SST: ");  
+                        SST_MANUFACT和FLASH_VENDMASK的宏定义在include/flash.h中:
+                                #define SST_MANUFACT	0x00BF00BF ;该数值来源见SST39VF6401B的Datasheet.      
+                                #define FLASH_VENDMASK	0xFFFF0000                          
+                        <3> 在void flash_identification (flash_info_t * info)函数的最后，即 
+                        printf ("AT49BV6416 (64Mbit)\n");
+                                }  的后面添加如下几行：
+                        else if ((device_code & FLASH_TYPEMASK) == (SST_ID_xF6401B & FLASH_TYPEMASK)) {   
+                                info->flash_id |= SST_ID_xF6401B & FLASH_TYPEMASK;                                
+                                printf ("SST39VF6401B (64Mbit)\n");                           
+                        }
+                        <4> 在ulong flash_init (void)函数中
+                        else {
+                                        flash_nb_blocks = 0;
+                                        pOrgDef = OrgAT49BV16x4;
+                                 }的前面添加如下几行：
+                        else if ((flash_info[i].flash_id & FLASH_TYPEMASK) ==       
+                                 (SST_ID_xF6401B & FLASH_TYPEMASK)) {	/* SST39VF6401B Flash */ 
+                                        pOrgDef = OrgSST39VF6401B;    
+                                        flash_nb_blocks = sizeof (OrgSST39VF6401B) / sizeof (OrgDef);               
+                                }
+                        <5> 在 void flash_print_info (flash_info_t * info)函数中
+                        default:
+                        printf ("Unknown Vendor ");
+                        break; 
+                        这几句的前面添加如下几句：
+                        case (SST_MANUFACT & FLASH_VENDMASK):
+                                        printf ("SST: ");
+                                        break;
+                        <6> 在 void flash_print_info (flash_info_t * info)函数中
+                        default:
+                                        printf ("Unknown Chip Type\n");
+                                        goto Done;
+                                        break;
+                        这几句的前面添加如下几句：
+                        case (SST_ID_xF6401B & FLASH_TYPEMASK):
+                                        printf ("SST39VF6401B (64Mbit)\n");
+                                        break;
+                        <7> 在int flash_erase (flash_info_t * info, int s_first, int s_last)函数中，将以下几句用/* */屏蔽掉：
+                        if ((info->flash_id & FLASH_VENDMASK) !=
+                        (ATM_MANUFACT & FLASH_VENDMASK)) {
+                                     return ERR_UNKNOWN_FLASH_VENDOR;
+                        }
+                        并在下面添加如下几行：
+                        if ((info->flash_id & FLASH_VENDMASK) !=
+                                        (STT_MANUFACT & FLASH_VENDMASK)) {
+                                        return ERR_UNKNOWN_FLASH_VENDOR;
+                        }
+                   至此，UBOOT修改完毕。
+                   如果核心板上的FLASH型号为SST 39VF6401，只需将上面修改部分中的6401B换成6401即可。比如OrgSST39VF6401B、SST39VF6401B、SST_ID_xF6401B，只要将后面的B去掉即可。
+                3，编译源代码。主要涉及到交叉编译。
+                   这里的交叉编译器用的是cross-2.95.3。
+                   make distclean
+                   make at91rm9200dk_config
+                   make
+                   /*TODO:详细的编译过程说明参看实验室的“嵌入式Linux技术手册”*/
+                4，烧写U-boot。编译成功获得二进制文件之后，就需要将bin文件烧录进NOR Flash中。因为此时硬件系统没有任何初始化的环境，因此只能通过JTAG端口将二进制文件写入Flash中。这里在windows下使用ADS，利用FlashDown程序即可。
+                   /*TODO:具体的烧写步骤参看实验室的“嵌入式Linux技术手册”，这里不赘述了*/
+                5，设置U-boot参数。为了引导Linux内核启动，需要设置U-boot的参数：
+                        (1)，setenv ethaddr 12:34:56:78:90:aa
+                                为MAC地址，间隔符号一定要为:，不能为.。这个参数一旦设置就不能修改了，除非重新烧过U-boot。
+                        (2)，setenv ipaddr 192.168.0.11
+                                目标板的IP地址。
+                        (3)，setenv serverip 192.168.0.187
+                                服务器IP地址，设置成和目标板连接的PC的IP地址。
+                        (4)，setenv netmask 255.255.255.0
+                                以太网接口的掩码。
+                        (5)，setenv bootargs root=/dev/ram rw initrd=0x20800000,6000000 ramdisk_size=15360 console=ttyS0,115200 mem=64M
+                                这个是配置ramdisk的参数了。
+                                启动参数，6000000为十进制，6M表示在内存中分区的大小；ramdisk_size为15360，单位为kb，大约为15M，为内存中开辟的位置大小
+                                在内核配置时，有一选项ramdisk_size，只要设置这个值>=你的ramdisk大小就行，并不一定要和U-boot的一样。
+                                如果你内术内核里没有设置这个值，那么默认的大小空间根据你的config文件来的，
+                                如果initrd=0x21100000,8000000中的8000000比你的ramdisk.gz文件小的话,内核也许会起不来或者起来后你的文件系统里会少一些文件。
+                                如果内核的起动参数里ramdisk_size的值存在，那里内核就会使用这个值而不是使用你在config时设置的值。
+                                如果u-boot里bootargs变量存在，那么内核起动是使用的是u-boot里bootargs的值而不是配置内核时的cmdline的值，
+                                因些当 u-boot的bootargs变量不存在时内核的cmdline参数才有效。也就是内核里设置好了的话就没有必要设置u-boot的bootargs变量。
+                                /dev/ram表示从ramdisk mount根文件系统；rw表示可读写；initrd=0x21200000指定根文件系统加载的起始位置；6000000代表根文件系统的大小，单位byte。
+                                ramdisk_size是mount后根文件系统的大小。
+                        (6)，setenv bootcmd cp.b 10300000 20800000 400000\;bootm 10100000
+                                是启动时执行的命令：cp.b将Flash中0x10300000地址开始的根文件系统COPY到0x20800000地址开始的SDRAM处，大小为0x400000(4M);
+                                bootm 10100000表示从0x10100000处引导内核启动（Flash）
+                        注意：对于不同的启动环境，U-boot有相应的设置变化：
+                                <1>，使用ramdisk时，根文件系统拷贝到内存的地址为0x20800000，只有这样才能正确挂载文件系统，不然mem要改为64M。为什么还不知道，据某人解释是：这样离内核近点...(参看initrd参数)
+                                <2>，如果为了挂载nfs文件系统(平时调试程序都用这个)：
+                                     setenv bootargs root=/dev/nfs rw nfsroot=192.168.0.187:/home/zhs/workspace/arm-linux/rootfs ip=192.168.0.11:192.168.0.187:192.168.0.187:255.255.255.0 console=ttyS0,115200 mem=64M
+                                     如果是用了路由，可能要加上.../rootfs,rsize=1500,wsize=1500 (结果就是nfs挂不上如果不加的话)
+                                     setenv bootargs root=/dev/nfs rw nfsroot=192.168.0.187:/home/zhs/workspace/arm-linux/rootfs,rsize=1500,wsize=1500 ip=192.168.0.11:192.168.0.187:192.168.0.187:255.255.255.0 console=ttyS0,115200 mem=64M/* 没有rw是否默认只读,待确定 zy*/
+                                <3>，如果为了挂载yaffs的根文件系统(首先先要搞定yaffs相关的一些设置)：
+                                     setenv bootargs noinitrd root=/dev/mtdblock0 console=ttyS0,115200 mem=64M
+                                     setenv bootcmd bootm 10100000
+                        (7)，更多的参数设置可以在U-boot中help一下。
+        以上为U-boot的移植过程，其中很多设置参数都涉及到硬件以及U-boot对Linux系统的调用和参数传递，更多详细的解释可以参看实验室的“嵌入式Linux技术手册”。
+
+        其次为Linux操作系统内核的移植。
+                1，修改源码树下顶层的Makefile(LINE:185)文件
+                        ARCH ?= arm
+                        CROSS_COMPILE ?= arm-linux-   
+                     或者在这里指定arm-linux-gcc的绝对路径，比如：/usr/local/arm/3.4.1/bin/arm-linux-
+                2，修改源代码：
+                   因为移植内核，硬件条件各不相同，所以针对具体硬件，需要修改内核源码中相应的部分。
+                   这里需要修改的是LCD控制驱动器S1D13506的驱动。/*TODO:这里是根据实验室的“AT91RM9200的LCD显示系统的设计”修改的，文中有一些差错*/
+                        <1>，首先下载内核补丁2.6.20-at91.patch.gz，解压后拷贝到linux-2.6.20目录下，使用
+                                patch -p1 i 2.6.20.7.patch /*TODO:可能命令有误*//*是patch -p1（数字1不是字母l） i（不是pi） 补丁文件名  zy*/
+                             给内核打上补丁；/*TODO:附件中给出*/
+                        <2>，完成后在arch/arm/mach-at91rm9200/中增加了ics1523.c文件，其为ics1523的初始化代码。
+                             在同目录下board-dk.c中增加了S1D13806的初始化代码（同样适用于S1D13506）；
+                        <3>，由于补丁的硬件初始化代码针对640x480的LCD屏，而这里的LCD为800x600，因此需要修改相应的代码。
+                        <4>，在board-dk.c中，修改dk_s1dfb_initregs[]结构体中成员：
+                                对行信号时序进行设置：
+                                {S1DREG_LCD_DISP_HWIDTH, 0x63},
+                                {S1DREG_LCD_NDISP_HPER, 0x1B},
+                                {S1DREG_TFT_FPLINE_START, 0x02},
+                                {S1DREG_TFT_FPLINE_PWIDTH, 0x18},
+                                对场信号时序进行设置:
+                                {S1DREG_LCD_DISP_VHEIGHT0, 0x57},
+                                {S1DREG_LCD_DISP_VHEIGHT1, 0x02},
+                                {S1DREG_LCD_NDISP_VPER, 0x18},
+                                {S1DREG_TFT_FPFRAME_START, 0x01},
+                                {S1DREG_TFT_FPFRAME_PWIDTH, 0x01},
+                                对显存空间进行设置:
+                                {S1DREG_LCD_DISP_MODE, 0x05},
+                                {S1DREG_LCD_MISC, 0x00},
+                                {S1DREG_LCD_DISP_START0, 0x00},
+                                {S1DREG_LCD_DISP_START1, 0xC8},
+                                {S1DREG_LCD_DISP_START2, 0x00},
+                                {S1DREG_LCD_MEM_OFF0, 0x20},
+                                {S1DREG_LCD_MEM_OFF1, 0x03},
+                                显示模式为 LCD 显示:
+                                {S1DREG_COM_DISP_MODE, 0x01}    /*TODO:原文中为0x02，这里为0x01*/
+                        <5>，在ics1523.c(arch/arm/mach-at91rm9200/)中，修改以下寄存器赋值语句以产生像素时钟：
+                                ack |= at91_ics1523_WriteByte ((unsigned char) ICS_OD, (unsigned char) (ICS_INSEL | 0x54));
+                                ack |= at91_ics1523_WriteByte ((unsigned char) ICS_FD0, (unsigned char) 0x3A) ;
+				platform_device dk_s1dfb_device = 
+					{
+						name = "s1d13500fb"  /*和设备名匹配，易忽略此处*/
+					}/* zy */
+
+                        <6>，在include/video/s1d13xxxfb.h中修改宏定义如下：
+                                #define S1D_CHIP_REV 4
+                                #define S1D_FBID     "S1D13506"
+                                #define S1D_DEVICENAME "s1d13506fb"
+                             以上参数的设置要参考ICS1523(需要下载官方配置软件)、S1D13506和LCD屏NL8060BC31-17的datasheet。
+                        <7>，修改后，在内核make menuconfig时，在Device Drivers->Graphics support中选中"Support for frame buffer device","Enable Video Mode Handling Helpers","Enable Tile Blitting Support"和"Epson S1D13xxx framebuffer support"选项/* zy */
+			<8>,若需要添加USB鼠标，键盘驱动需要配置：Device Drivers -> USB support -> USB Input Devices -> USB Human Interface Device (full HID) 				        support.选中即可 /* zy */ 
+                        <9>，在文件系统/dev/目录下建立fb0设备结点：
+                                mknod -m 600 fb0 c 29 0
+                        /*TODO:需要实践来检验*/
+                   除此之外，串口部分也需要修改：
+                        在arch/arm/mach-at91rm9200/board-dk.c中，修改dk_uart_config结构体来配置串口：
+                                .console_tty = 0,
+                                .nr_tty      = 2,
+                                .tty_map     = { 4, 0, -1, -1, -1 }
+                        这样，便使能了监护仪中需要的两个串口。
+                   当然，还有Linux里LOGO修改，可以参考另一份文档。
+                   /* 以上配置实践检验没有问题  zy */
+                3，根据自己平台处理器型号找到合适的默认配置文件。
+                     对于at91rm9200，可以在arch/arm/configs目录中找到基于at91rm9200的默认配置。这里我们选用at91rm9200dk_defconfig
+                4，将这个配置文件拷贝到源码顶层目录下，然后make at91rm9200dk_defconfig。之后，这个配置文件就被输出到了前台为.config文件。
+                5，如果需要修改一些细节的内核配置，则继续在顶层目录下运行make menuconfig，来配置相关的内核选项(可以参看手册)。
+		   /*手册中并没有写清楚，默认配置无法直接挂载NFS文件系统 	zy*/     
+ 		5.1 关于使用nfs文件系统的内核配置： 顶层目录下运行make menuconfig，选中networking options->IP:kernel level auloconfiguralion项，选中file systems	    			->network file systems下的root file system on nfs和nfs file system support /*手册中没有使用nfs，所以内核配置没有写这个部分 zy */ 
+                     这里根据需求以及样机调试需要，需要修改的部分有：串口，LCD驱动，USB驱动，LOGO，NAND Flash的YAFFS。
+                6，一切配置妥当之后，在顶层目录下运行：make。则会在arch/arm/boot/下得到zIamge的内核映像文件，是一个可自解压的内核映像。
+                7，制作用于U-boot引导的内核镜像。
+                   (1)，将zImage拷出来，然后使用U-boot自带的mkimage命令。mkimage是U-boot的tools目录下U-boot工具之一。
+                        他的作用就是转换U-boot格式映像，也就是给映像文件加头。
+                   (2)，具体做法如下：将mkimage拷贝到/usr/bin目录下（方便以后调用，也可以直接调用./mkimage），使用命令：
+                        mkimage -n 'linux-2.6.20' -A arm -O linux -T kernel -C none -a 0x20008000 -e 0x20008000 -d zImage zImage.img
+                        一般来说，在自动启动阶段，uboot中的bootm xxx与-a指定的位置不同，所以这里的-e和-a指定的地址应该一样。
+                        如果是在调试阶段，先使用tftp下载内核映像到内存中，然后bootm的话，如果bootm xx地址与-a指定的相同，则-e的值为-a的值+0x40(64byte)
+                        如果bootm xx地址和-a指定的不同，则-e的值应该和-a的一样。
+                        可以mkimage --help查看命令的使用以及参数含义:
+                                -A set architecture to 'arch'
+                                -O set operating system to 'os'
+                                -T set image type to 'type'
+                                -C set compression type 'comp'
+                                -a set load address to 'addr'(hex)
+                                -e set entry point to 'ep'(hex)
+                                -n set image name to 'name'
+                                -d use image data from 'datafile'
+                                -x set XIP(execute in place)
+                        其中：-a参数后是内核在SDRAM的存储地址，内核将从Flash被COPY到该地址；-e参数后是内核入口地址，U-boot会跳到这个地址执行，启动内核。
+                8，烧写内核镜像。
+                   方法1：
+                        在windows下启动AXD，调用FlashDown程序，依照次序烧写U-boot，内核和文件系统（设置三个断点）。
+                        烧写中注意程序中的物理地址与逻辑地址的区别。
+                        详细的解释看源码中的注释。
+                   方法2：
+                        首先必须通过方法1将U-boot烧进Flash中；
+                        通过以太网口用tftp协议将内核以及根文件系统下载到内存中，有如下命令：
+                                tftp 20008000 zimage.img      //下载内核到内存，起始地址为0x20008000
+                                tftp 21200000 ramdisk.gz      //下载根文件系统到地址21200000
+                                以上两个内存地址要根据内核映像大小以及根文件系统映像大小确定。
+                        接下来从SDRAM中将映像文件COPY到Flash中，以长久保存：
+                                erase 10100000 106fffff       //写之前必须将Flash擦除
+                                cp.b 20008000 10100000 200000 //从20008000中写到10100000处，大小为200000(2M)
+                                cp.b 21200000 10300000 400000 //从21200000中写到10300000处，大小为400000(4M)
+                                以上两个拷贝的大小数目以内核映像以及根文件系统映像大小为准
+                9，启动内核。
+                   启动内核分为调试以及实际运行模式。
+                   如果是调试模式下，可以不用烧写内核。烧写U-boot之后，上电启动U-boot，在U-boot中通过tftp下载内核，设置好启动参数，然后bootm即可启动；
+                   如果是实际运行模式，需要烧写内核至NOR Flash中。由U-boot自动引导系统。U-boot的引导参数设置上面已经说过了。
+
+        接下来是根文件系统。
+        根文件系统可以选择Ramdisk，将其烧写进NOR Flash中，然后在系统启动时将其拷贝到内存中再挂载；或者使用NAND Flash作为分区，直接以该分区作为根目录。
+        因为拷贝ramdisk在启动时消耗大量时间，并且使用的MiniGUI的动态链接库较大，因此这里使用32M的NAND Flash作为根目录，采用的文件系统为YAFFS2。
+        以下为制作步骤：
+                1，取得YAFFS2的源码之后，解压并进入源码目录，并给内核打补丁，加入内核；
+                        ./patch-ker.sh @/linux-2.6.20     (@为linux-2.6.20所在的路径)
+                   会发现在内核的fs目录下会多了个yaffs2的目录。
+                2，针对硬件平台，修改内核源码：
+                        (1)修改arch/arm/mach-at91rm9200/board-dk.c
+                                static struct at91_nand_data_initdata dk_nand_data= {
+                                        .ale    = 22,
+                                        .cle    = 21,
+                                        //.det_pin = AT91_PIN_PB1,
+                                        .rdy_pin = AT91_PIN_PC14,
+                                        .enable_pin = AT91_PIN_PC15,
+                                        .partition_info = nand_partitions,
+                                 };
+                            这里将整个NAND Flash作为一个分区，挂载在根文件系统的一个目录下，用于保存需要动态存储的数据，而没有对其进行分区设置。
+                        (2)修改arch/arm/mach-at91rm9200/at91rm9200_devices.c
+                                static struct resource nand_resources[] = {
+                                        {
+                                                .start = NAND_BASE,
+                                                .end = NAND_BASE + SZ_32M -1,
+                                                .flags = IORESOURCE_MEM,
+                                         }
+                                 };
+                3，在内核配置中添加支持(make menuconfig)
+                        Device Drivers --->
+                        Memory Technology Devices(MTD) --->
+                        <*> Memory Technology Device(MTD) support
+                        [*] MTD partitioning support
+                        --- User Moduls And Translation Layers
+                        <*> Direct char device access to MTD devices
+                        <*> Caching block device access to MTD devices
+                            NAND Flash Device Drivers --->
+                        <*> NAND Device Support
+                        [*] Support for NAND Flash/SmartMedia on AT91
+                        File system --->
+                        Miscellaneous filesystems --->
+                        <*> YAFFS2 file system support
+                4，添加MTD设备
+                        由于将NAND Flash从整体上作为一个MTD分区，用于保存用户数据，所以在根文件系统下的/dev目录下要添加mtd0,mtdblock0设备文件。
+                        这里mtd0,mtdblock0对应整个NAND Flash空间。
+                        #mknod -m 666 mtd0 c 90 0
+                        #mknod -m 666 mtdblock0 b 31 0
+                5，YAFFS2文件系统的挂载和测试；
+                        启动系统之后，会看到于YAFFS2相关的启动信息如下：
+                                NAND device: Manufacturer ID: 0xec, Chip ID: 0x75(Samsung NAND 32MiB 3,3v 8-bit)
+                                Scanning device for bad blocks
+                                Creating 1 MTD partition on "NAND 32MiB 8,8b 8-bit":
+                                0x00000000-0x02000000 : "NAND Partition 1"
+                        另外，进入系统之后，可以通过下面的命令查看分区信息：
+                                cat /proc/mtd
+                        或者使用:
+                                df -h
+                        确认YAFFS2文件系统配置成功之后，执行：
+                                mount -t yaffs2 /dev/mtdblock0 /mnt
+                        将该分区挂载到/mnt目录之下。如果要自动挂载，可以在启动脚本rcS里添加这个命令。
+                6，将YAFFS2文件系统作为根文件系统：
+                        (1)，拷贝根文件系统的内容至NAND Flash，/*TODO:此前要建立好nfs系统*/
+                           由nfs根文件系统启动，在YAFFS2文件系统作为普通文件系统挂载成功后，通过下面的命令将根文件系统的内容拷贝到NANDＦlash中：
+                                cp -av / bin dev etc lib proc sbin /mnt
+                        (2)，修改fstab文件，将YAFFS2文件系统安装为根文件系统：
+                                /dev/mtdblock0 / yaffs defaults 0 1
+                                none /proc proc defaults 0 0
+                        (3)，设置启动参数，使系统从NAND Flash中安装根文件系统：
+                setenv bootargs noinitrd root=/dev/mtdblock0 console=ttyS0 
+
+        最后是MiniGUI库编译。
+        因为要能够显示波形和各个特征值，并且实现与用户的交互，必然要使用GUI，因此选择轻量级的MiniGUI。
+        如果暂时没有硬件来调试MiniGUI的应用程序，则可以将MiniGUI编译为在服务端PC上运行，此时不是交叉编译。这样便可以在PC上利用qvfb首先调试应用程序的基本功能。
+        这里主要讲述如何交叉编译MiniGUI以及其移植：
+                1，这里选择MiniGUI-1.6.10，为开源版本，而“嵌入式Linux技术手册”中讲述的是1.3.3版本的移植，基本流程基本相同，但是因为1.6.10代码成熟度更好，因此在编译过程中不会出现一般的代码性错误，
+                   下载libminigui-1.6.10，minigui-res-1.6.10，另外两个mde和mg-samples不是本项目必须。
+                   下载zlib-1.2.3、libpng-1.2.18、jpeg-6b。
+                2，安装zlib库：
+                   /*TODO:来自“手册”*/
+                   因为zlib库的configure脚本不支持交叉编译选项，因此需要手动临时把gcc修改成指向交叉编译器arm-linux-gcc，使用软链接即可：
+                   以下命令可能需要sudo：
+                   cd /usr/bin
+                   mv gcc gcc_bak
+                   ln -s /usr/local/arm/3.4.1/bin/arm-linux-gcc ./gcc
+                   mv ld ld_bak
+                   ln -s /usr/local/arm/3.4.1/bin/arm-linux-ld ./ld    /*ln不是ls zy*/
+                   修改后回到zlib目录下，进行配置：
+                   这里指定安装目录，会自动安装到/usr/local/arm/3.4.1/arm-linux/[include, lib]目录下，并设置为动态链接：
+                   ./configure --prefix=/usr/local/arm/3.4.1/arm-linux/ --shared
+                   make
+                   make install
+                   之后，应该能够在/usr/local/arm/3.4.1/arm-linux/的lib下有libz.so，libz.so.1，libz.so.1.2.3和include目录下有libz.h。/*zlib.h不是libz.h  zy*/
+                   同时将备份的gcc还原。
+                   cd /usr/bin
+                   mv gcc_bak gcc
+                   mv ld_bak ld
+                3，安装png库：
+                   进入源码目录下，进行配置：
+                   ./configure CC=arm-linux-gcc --prefix=/usr/local/arm/3.4.1/arm-linux --host=arm-linux
+                   make
+                   make install
+                   之后，应该在/usr/local/arm/3.4.1/arm-linux/目录下的lib目录下有libpng.a，libpng.so等文件和include目录下有png.h，pngconf.h和libpng12目录。
+                4，安装jpeg库：
+                   进入源码目录下，进行配置：
+                   ./configure CC=arm-linux-gcc --prefix=/usr/local/arm/3.4.1/arm-linux --enable-shared/*由于您经常有输入错误。。以后再也不复制你的命令了 zy*/
+                   在编译之前，应该从前面libpng-1.2.18源码目录下的libtool拷贝过来，放在jepg-6b/下，否则会有“make:./libtool:command not found”错误。
+                   make
+                   mkdir -p /usr/local/arm/3.4.1/arm-linux/man/man1    否则会报错
+                   make install
+                   之后，应该在/usr/local/arm/3.4.1/arm-linux/目录下的lib目录下有libjpeg.so，libjpeg.so.62.0.0等文件和include目录下有jpeglib.h文件。
+                5，因为1.6.10版本中将定时器的实现由1.3.3中的信号实现改成了sleep实现，因此实时性大大降低。
+                   为了解决这个问题，需要对MiniGUI相关代码进行修改，将定时器的实现修改为信号实现。修改中参考了1.3.3版本代码。 /*1.6.2中没有TimerEntry zy*/
+                   <1>，在kernel/timer.c中，修改TimeEntry(void *data)函数：
+                            pthread_join(__mg_desktop, NULL);    //add
+                            //_os_timer_loop ();    //del
+                   <2>，timer.c添加（全局随便哪)：
+                            //zhs_change2 start
+                            //用以保存原来的动作和定时时间，最后在TerminateTimer中使用两个变量将其恢复
+                            #ifndef _LITE_VERSION
+                            #include <signal.h>
+                            #include <unistd.h>
+                            #include <sys/time.h>
+                            static struct sigaction old_alarm_handler;
+                            static struct itimerval old_timer;
+                            #endif
+                            //zhs_change2 end
+                   <3>，timer.c中修改InitTimer(void)函数：
+                            //zhs_change start
+                            //add start
+                            //printf("/*** zhs: %s:%d in InitTimer() ***/\n", __FILE__, __LINE__);
+                            struct itimerval timerv;
+                            struct sigaction siga;
+
+                            siga.sa_handler = (void(*)(int))__mg_timer_action;
+                            siga.sa_flags = 0;
+
+                            memset(&siga.sa_mask, 0, sizeof(sigset_t));
+
+                            sigaction(SIGALRM, &siga, &old_alarm_handler);
+
+                            timerv.it_interval.tv_sec = 0;
+                            timerv.it_interval.tv_usec = 10000;
+                            timerv.it_value = timerv.it_interval;
+
+                            if(setitimer(ITIMER_REAL, &timerv, &old_timer)){
+                                fprintf(stderr, "TIMER: setitimer call failed!\n");
+                                perror("setitimer");
+                                        return FALSE;
+                            }
+                            //add end
+                            //zhs_change end
+                   <4>，timer.c中修改TerminateTimer(void)函数：
+                            //zhs_change2 start
+                            //printf("/*** zhs: %s:%d in TerminateTimer() ***/\n", __FILE__, __LINE__);
+
+                            if (setitimer (ITIMER_REAL, &old_timer, 0) == -1) {
+                                TIMER_ERR_SYS ("setitimer call failed!\n");
+                                return FALSE;
+                            }
+
+                            if (sigaction (SIGALRM, &old_alarm_handler, NULL) == -1) {
+                                TIMER_ERR_SYS ("sigaction call failed!\n");
+                                return FALSE;
+                            }
+                            //zhs_change2 end
+                   这样就完成了定时器的修改。
+                6，配置编译安装MiniGUI：
+                   /*TODO:这个毛病不知道1.6.10有没有，还待验证*/ /*直接make没发现问题 zy*/
+                   因为链接ljpeg lpng时MiniGUI来时链接/usr/lib下的库，因此这里再使用软链接重新指向：
+                   cd /usr/lib
+                   mv libjpeg.so libjpeg.so_bak
+                   mv libpng.so libpng.so_bak
+                   ln -s /usr/local/arm/3.4.1/arm-linux-gcc/lib/libpng.so libpng.so
+                   ln -s /usr/local/arm/3.4.1/arm-linux-gcc/lib/libjpeg.so libjpeg.so
+                   然后进入MiniGUI源码目录进行配置：
+                   1.6.10不再支持make menuconfig，因此使用./configure完成配置，具体的配置选项可以通过./configure --help得知和查看用户手册得知。
+                   这里使用的./configure为：
+                   ./configure CC=arm-linux-gcc --build=i686-pc-linux --target=arm-linux --host=arm-linux 
+                               prefix=/usr/local/arm/3.4.1/arm-linux --disable-galqvfb --disable-galecoslcd --disable-rbfsuppor
+                               --disable-type1support --enable-extfullgif --enable-extskin
+                   /*TODO:以上的配置是以前的配置，针对1.6.10和应用的具体要求，可能需要有所变动*/
+                   make
+                   make install
+                   之后，应该在/usr/local/arm/3.4.1/arm-linux/目录下的lib目录下有libminigui.so，libmgext.so，libvcongui.so等文件和include目录下是否有mingui目录（内含minigui相关的头文件）。
+                   最后将备份该回来：
+                   cd /usr/lib
+                   mv libjpeg.so_bak libjpeg.so
+                   mv libpng.so_bak libpng.so
+                7，移植MiniGUI:
+                   应为这里应用程序使用MiniGUI的动态链接库，因此需要将MiniGUI的动态链接库拷贝到文件系统中，以便应用程序运行时调用。
+                   /*TODO:列举rootfs/usr/local/lib/目录下的动态链接库，可能有些是冗余的*/
+                   同时安装res至rootfs/usr/local/lib/minigui/目录下。
+                8，在文件系统/dev/目录下建立必要的设备文件：
+                        mknod fb0 c 29 0    //这个在进行LCD驱动修改中就要求了
+                        mkdir input     //根据MiniGUI.cfg中鼠标的配置确定
+                        cd input
+                        mknod mice c 13 63
+                9，配置MiniGUI:
+                   MiniGUI的配置是通过MiniGUI.cfg来设置的。具体可以参看MiniGUI的用户指南。
+                   这里将MiniGUI.cfg拷贝到/usr/local/etc/目录下，并进行相应的修改：
+                   /*TODO:具体修改*/
+                   (1)，修改[system]；
+                   (2)，修改各种资源的路径；
+                   (3)，修改字体相关；
+		   /*需要再具体点 zy*/
+
+        以上步骤之后，便完成了整个开发环境以及应用程序运行环境的搭建。然后作为测试，可以在服务端交叉编译并在目标板上运行以下示例程序。
+        示例代码如下：
+                /*
+                 * FILE: hello.c
+                 * 生成一个显示hello world的示例程序
+                 *
+                #include <stdio.h>
+                #include <minigui/common.h>
+                #include <minigui/minigui.h>
+                #include <minigui/gdi.h>
+                #include <minigui/window.h>
+                #include <minigui/control.h> 
+
+                static int HelloWinProc(HWND hWnd,int message,WPARAM wParam,LPARAM lParam)
+                {
+                        HDC hdc;
+                        HWND hbutton;
+                        switch (message){
+                                case MSG_CREATE:
+                                        break;
+                                case MSG_PAINT:
+                                        hdc = BeginPaint(hWnd);
+                                        TextOut(hdc,100,100,"hello world!!!");
+                                        EndPaint(hWnd,hdc);
+                                        return 0;
+                                case MSG_CLOSE:
+                                        DestroyMainWindow(hWnd);
+                                        PostQuitMessage(hWnd);
+                                        return 0;
+                        }
+
+                        return DefaultMainWinProc(hWnd, message,wParam, lParam);
+                }
+
+                int MiniGUIMain(int argc, const char* argv[])
+                {
+                        MSG Msg;
+                        HWND hMainWnd;
+                        MAINWINCREATE CreateInfo;
+
+                        #ifdef _LITE_VERSION
+                                SetDesktopRect(0,0,800,600);
+                        #endif
+
+                        CreateInfo.dwStyle=WS_VISIBLE | WS_BORDER | WS_CAPTION;
+                        CreateInfo.dwExStyle=WS_EX_NONE;
+                        CreateInfo.spCaption="hello world";
+                        CreateInfo.hMenu=0;
+                        CreateInfo.hCursor=GetSystemCursor(0);
+                        CreateInfo.hIcon=0;
+                        CreateInfo.MainWindowProc=HelloWinProc;
+                        CreateInfo.lx=0;
+                        CreateInfo.ty=0;
+                        CreateInfo.rx=320;
+                        CreateInfo.by=240;
+                        CreateInfo.iBkColor=COLOR_lightwhite;
+                        CreateInfo.dwAddData=0;
+                        CreateInfo.hHosting=HWND_DESKTOP;
+
+                        hMainWnd=CreateMainWindow(&CreateInfo);
+
+                        if(hMainWnd==HWND_INVALID)
+                                return -1;
+                        ShowWindow(hMainWnd,SW_SHOWNORMAL);
+
+                        while(GetMessage(&Msg,hMainWnd))
+                        {
+                                TranslateMessage(&Msg);
+                                DispatchMessage(&Msg);
+                        }
+
+                        MainWindowThreadCleanup(hMainWnd);
+
+                        return 0;
+                }
+
+                #ifndef _LITE_VERSION
+                #include <minigui/dti.c>
+                #endif
+                
+                相应的Makefile内容如下：
+                CC=arm-linux-gcc
+                hello:hello.c
+                        $(CC) -Wall hello.c -o hello -lpthread -lminigui -ljpeg -lpng -lmgext
+                这样编译之后，将应用程序hello拷贝到nfs文件系统下，然后通过U-boot以nfs引导系统启动，如果hello能够运行，表示以上工作成功。
+
+
+/***************************************************************************************************/
+
+六，程序设计
+        这里主要讲述上位机软件设计，不涉及下位机软件。
+        这里软件设计分为了两个部分：应用程序和驱动。应用程序主要负责与用户的交互和数据存储；而因为使用了操作系统，因此调用硬件必须通过相应的驱动来实现。
+
+        首先是应用程序说明。
+        根据需求分析可知大概的需求，这里将需求明晰：
+                1，操作界面有中文、英文切换设置，用户可在菜单界面中设置；
+                2，心电波形扫描输出速度三挡选择：12.5mm/s、25mm/s、50mm/s，增益选择有X1、X2、X1/2和AUTO选择，在菜单中设置；
+                3，呼吸波形扫描输出速度两档选择：6.25mm/s和12.5mm/s，增益选择有X1、X2、X4和X1/2选择，在菜单中设置；
+                4，心电导联选择：GND，标准I、II、III、加压肢体导联aVR、aVL、aVF及胸导联V1－V6；
+                5，脉搏氧饱和度波形扫描输出速度为12.5mm/s；
+                6，心率、体温、脉搏氧饱和度、呼吸率特征值刷新频率为20ms；
+                7，心率、呼吸率、收缩压、舒张压、平均压、体温的报警上下限在菜单中设置；
+                8，提供演示功能，能够使用模拟数据演示大部分功能；
+                9，能够驱动扬声器发出脉搏音或者心率音；
+                10，波形画面冻结以及ST段分析；
+                11，心率、体温、脉搏氧饱和度、呼吸率、无创血压趋势统计，存储及显示96小时趋势数据，并能够在趋势窗口中查看已有数据；
+                12，存储心律失常事件波形数据以及此时的心率、体温、脉搏氧饱和度和呼吸率，并能回放查看；
+                13，能够回放5分钟的心电波形数据及心率值、体温、脉搏氧饱和度和呼吸率；
+                14，提供手动、定时自动无创血压测量，存储并能够在列表窗口中查看已有数据；
+                15，通过菜单设置“成人／儿童／新生儿”，适用于成人、儿童和新生儿患者；
+                16，内置打印机，能够打印各种数据和波形，在菜单中设置打印参数；
+        根据以上的需求，可以确定应用程序的模块：
+        /*TODO:monitor_module.png*/
+        由上图可知，整个应用程序为三层结构，分别为：表现层、数据接口层和业务层。
+        表现层负责数据、波形显示和用户交互。一方面用户的操作以及底层等异步事件通过消息机制传递到数据接口层，并由数据接口层进行数据的存取处理或者调用业务层的接口函数；另一方面表现层通过数据接口层提供的接口函数取得显示所需要的各个特征值数据和波形数据。
+        表现层包括的C文件主要有：mainwin.c、wave.c、menu.c、trend.c和list.c。mainwin.c主要负责各个特征值的显示以及血压数据的显示，同时接收用户的操作，完成操作到数据接口层的投递；wave.c负责三个波形的显示、冻结操作、心率失常以及回放等，因为波形刷新率较高，为了不阻塞交互操作，因此wave为单独一个线程；menu.c主要显示菜单窗口，并接受用户的操作，修改和保存相应配置；trend.c显示趋势窗口，读取数据接口层保存的趋势数据，并根据时间宽度显示趋势数据；list.c显示列表窗口，读取数据接口层保存的血压数据，以列表的形式显示血压数据。
+        数据接口层负责保存、组织业务层取得的各种数据，并提供表现层相应的数据调用接口函数，同时处理各种消息处理。一方面，由业务层调用接口数据层提供的写入接口函数将从串口中读取到的各个特征值以及波形数据写入到数据层相应的数据结构中，保存数据，并交由数据接口层进行组织管理，另一方面，数据接口层提供对业务层的调用的接口函数，相应表现层的用户操作，使得业务层进行相应操作，从而改变硬件状态。
+        数据接口层包括：interface.c和data.c。interface.c里实现了对表层提供的接口函数以及对业务层的接口函数；data.c则定义了各种数据结构，用来保存和组织管理应用程序需要的各种数据。
+        业务层负责与硬件打交道。一方面，通过串口读入各个包数据，并根据协议进行解包操作，之后调用数据接口层提供的接口函数将数据提交到数据层进行管理；另一方面，提供对硬件操作的接口函数给上层模块，从而实现用户对硬件的各种操作。
+        业务层包括：receive.c和print.c。receive.c单独打开一个线程，对串口进行读取数据，并对数据包按协议进行解包，然后调用数据层的接口函数，将数据提交给数据层，同时实现提供给上层模块的接口函数，使得上层能够设置硬件；print.c则定义了一个单独线程，调用相应驱动进行打印操作。
+        以上即为应用程序的模块划分，通过每层提供的接口函数，使得数据流和消息流(即控制流)能够有序的在程序运行期间运作。
+        另外，根据需求，针对数据流给出了以下的数据流图：
+        /*TODO:mointor_data.png*/
+        /*TODO:这个图是旧的，可能和现在的程序有所出入*/
+        由上图可以看出应用程序中的数据结构以及数据流。
+        程序中主要的数据结构包括：三个趋势数据链表、三个波形循环队列以及各种特征值和标志变量。
+        趋势数据链表包括心电链表、心率失常链表和血压链表。心电链表为双向链表，每个结点为一个结构体，结构体中包括心率、体温、脉搏氧饱和度、呼吸率以及前驱指针和后继指针，要求每秒保存一个结点。心率失常链表为双向链表，每个结点为一个结构体，结构体包括此次心率失常的失常类型、指向此次心率失常波形数据指针、此时的时、分和秒、此时的心率数据，体温数据，脉搏氧饱和度和呼吸率、前驱指针和后继指针，要求每次发生心率失常时保存一个结点。血压链表也是一个双向链表，结点为一个结构体，结构体包括该结点标号、保存的时分秒、此时的心率，体温，脉搏氧饱和度和呼吸率、本次血压测量得到的收缩压、舒张压和平均压以及前驱指针和后继指针，要求每次血压测量成功之后保存。
+        波形循环队列包括心电波形队列、脉搏氧饱和度波形队列和呼吸波形队列。心电波形队列因为刷新速度较快且要求级联显示，因此定义了一个80000大小的数组存储波形数据，同时定义了读指针、写指针以及回放指针，用来定位相应的数组下标，另外定义了一个信号量，以解决不同线程（数据接收线程和波形线程）之间的同步问题。除此之外，实现了对心电队列进行读写及其他必要操作的接口函数，包括：int WriteEcgQueue(EcgQueue *pq, int data)、EcgQueue *GetEcgPointer()、int GetCurrentEcg(int* pdata, int *pdataplus)、int GetEcgInter(EcgQueue *pq)、int GetRecallEcg(int* pdata)、int SetEcgRead(EcgQueue *pq)。而脉搏氧饱和度队列没有涉及到回放操作，只有刷新波形而已，因此只定义了600大小的数组以及读写下标变量和信号量变量，另外针对脉搏氧的棒图数据，又定义了一个棒图数组和读写下标变量。提供的操作接口函数包括：int WriteOtherQueue(OtherQueue *pq, unsigned int data)、int WriteStickQueue(OtherQueue *pq, unsigned int data)、int GetCurrentSpO2(unsigned int* pdata)、int SetOtherRead(OtherQueue *pq)。而呼吸波形与脉搏氧波形相似，这里就不赘述了。
+        全局的特征值变量包括：心率、体温、脉搏氧饱和度、呼吸率、收缩压、舒张压、平均压、脉搏、心率失常类型和当前失常波形指针。这些变量根据不同的刷新频率进行更新。全局的标志变量包括：导联是否脱落、探头是否脱落、血压测量状态、当前是实时还是演示、是否冻结等，标志着程序各个部分的所处的状态。
+
+        接下来是驱动部分。
+        /*TODO:这里这是简单介绍，具体驱动相关知识可以参看“技术手册”和源代码*/
+        由上面的模块划分示意图可知，这个项目使用了三个驱动，分别是ds1302、sp_print和pwm_bell。
+        ds1302用于驱动DS1302芯片，该芯片是实时时钟芯片。根据硬件连接，使用at91rm9200的PA24、PC2和PC4与DS1302连接，模拟读写时序。
+        为了能够对DS1302进行读取，需要在文件系统/dev/下建立相应的设备文件：
+                mknod -m 600 601rtc c 250 0
+                其中的主设备号是由驱动里面决定的。
+        驱动在系统启动时装入，并在驱动初始化时读取DS1302的时钟值，然后将该值设置为Linux系统的时钟值；而在应用程序中，通过打开601rtc文件，读取用户的修改值，修改系统的时钟值，同时将该值写入到设备文件中，实现硬件的时钟同步。
+        pwm_bell用于驱动外置扬声器。利用at91rm9200内置定时器TC2，产生PWM信号。
+        为了能够对其进行控制，需要在文件系统/dev/下建立相应的设备文件：
+                mknod -m 600 bell_pwm c 251 0
+                其中的主设备号是有驱动里面决定的。
+        应用程序中在打开该设备文件之后，通过ioctl控制PWM的开始和中断以及输出的信号频率。
+        sp_print用于驱动外置的SP打印机。通过引出CPU的一些IO口，通过一定的时序对打印机进行通信。
+        为了能够控制打印机，需要在文件系统/dev/下建立相应的设备文件：
+                mknod -m 600 sp_print c 253 0
+                主设备号由驱动里决定。
+        应用程序中通过ioctl对打印机进行设置，通过write向打印机传输要打印的数据。
+
+        当应用程序monitor和三个驱动ds1302.ko、pwm_bell.ko和sp_print.ko成功编译之后，就需要将其放入到文件系统中，并使用。
+        这里将monitor程序和需要的资源文件以及配置文件放置在/home/monitor/目录之下；将三个驱动方在/home/drivers/目录下。
+        这里驱动没有直接编译进内核，而是采用模块装载的方法，所以为了能够在系统启动之后能够自动装载驱动和自动启动应用程序，就需要修改/etc/init.d/rcS文件。
+        insmod /home/driver/bell_pwm.ko
+        insmod /home/driver/ds1302.ko
+        insmod /home/driver/printer.ko
+        cd /home/monitor
+        ./monitor
+
+
+/***************************************************************************************/
+
+七，调试。
+        之前已经调试了整个环境是否正常，这里主要讲述如何调试应用程序。
+        嵌入式应用程序的调试和一般PC端应用程序调试不同。如果是PC端的调试，只要在编译程序时添加-g选项，然后使用gdb进行调试即可。
+        但是应为嵌入式系统不仅没有自己编译能力，同时也没有自己运行调试器的能力，因此就需要外部的调试工具。
+        这里使用的是交叉调试工具arm-linux-gdb和gdbserver。具体的介绍可以参看gdb的官方文档，里面不仅介绍了在PC端的gdb调试，同样介绍了gdb的交叉调试。
+
+        首先介绍如何搭建基于gdb的交叉调试环境：
+                1，首先下载gdb的源码。可以从ftp://ftp.gnu.org/gnu/gdb上下载gdb套件，这里下载的是gdb-6.8.tar.gz；
+                2，配置gdb。详细阅读源码目录下的README和./gdb/README，可知如何对gdb进行交叉编译。
+                   根据./gdb/README中的说明，因为是交叉编译，最好是另外建一个目录保存此次交叉编译的配置和中间文件：
+                   cd gdb-6.8
+                   mkdir ../gdb-6.8-arm
+                   cd ../gdb-6.8-arm
+                   ../gdb-6.8/configure --target=arm-linux --srcdir=../gdb-6.8 /*TODO:--prefix(应该可以不要)具体的成功与否还需要实践的确定*/
+                   make
+                   make install /*TODO:如果已经在当前目录下生成了arm-linux-gdb和gdbserver，可能就不需要make install了*/
+                3，之后你可以在gdb-6.8-arm/gdb/目录下发现gdb和gdbtui，在gdb-6.8-arm/gdbserver/目录下发现gdbserver，以上即为需要的两个执行程序。
+                其实，网上可以下到可以直接使用的arm-linux-gdb和gdbserver，因此如果可以直接使用的话就不需要自己编译了，就像arm-linux-gcc那样。
+
+        接下来介绍如何使用交叉调试器arm-linux-gdb和gdbserver来交叉调试运行于目标板的应用程序。
+        /*TODO:同样，具体详细的gdb使用可以参看gdb的官方文档*/
+        这里可以将交叉编译好的gdb或者gdbtui重命名为arm-linux-gdb或者arm-linux-gdbtui，两者的区别是gdbtui有一个比较友好的源码查看界面。
+        注意，要调试的程序(这里是monitor)译时添加-g选项，同时在目标板上和PC上各有一个副本。
+                1，首先将gdbserver拷贝到目标板的/home/monitor/目录下，和应用程序同一个目录，然后通过gdbserver启动应用程序：
+                        # ./gdbserver 192.168.0.11:1234 monitor
+                   这里192.168.0.11为宿主机的IP地址，端口号为1234。运行之后可以看到“Listening on port 1234”，即表示gdbserver在监听该端口了。
+                2，回到宿主机，将arm-linux-gdb放置到和PC上的monitor同一目录下，通过arm-linux-gdb启动应用程序：
+                        # ./arm-linux-gdb monitor
+                   然后输入命令联通目标板上的gdbserver:
+                        target remote 192.168.0.11:1234 monitor
+                   如果目标板上出现：Remote debugging from host 192.168.0.11，则表示成功通过网线与目标板上的应用程序连接了。
+                   接下来就可以如同调试本地程序一样在arm-linux-gdb里调试目标板上的程序了。
+                3，以下为一些gdb常用的调试命令，作为入门级的说明，更多和具体的介绍参看gdb官方文档：
+                   (1)，连通之后，如果断点等设置好之后，应该使用"c"来运行程序，而不是用"r"。因为程序已经在目标板上有gdbserver启动了。
+                   (2)，因为调试MiniGUI程序会有大量的信号产生，因此为了不被信号打扰到正常的逻辑调试，可以在程序执行前取消相应的暂停：
+                        handle SIG32 nostop noprint
+                        这样就可以避免调试时被real-time的信号打扰，当然，如果正好需要调试这些信号的处理时就不必这么做了。
+                   (3)，至于其他的比如设置断点、程序控制、函数堆栈查看等命令可以自己参看一些资料(/*TODO*/~/workspace/gdb/目录下OK的文章)。
+
+        介绍了建立调试环境和如何调试之后，再介绍一些用于调试应用程序另外一些方法。
+        这些方案是用于该monitro监护仪程序的，但是同样可以使用于基于MiniGUI或者其他类型的应用程序。
+        这里调试就单指通过串口利用minicom等程序控制系统，并且通过网络挂载nfs文件系统的条件下的调试。
+                1，因为对于monitor程序的可靠性调试出了让系统运行长时间拷机之外，还需要用户的操作，以便了解是否有错或者是否会在操作中崩溃。
+                   但是这种操作一般需要重复操作多次才会使程序出现错误或者崩溃，比如上百次。
+                   利用MiniGUI程序是基于消息机制来产生异步事件的，因此可以在应用程序中添加sendmessage之类的传递消息的代码来模拟用户的操作，因为用户的操作最后也是变成一条消息传递给程序。在配合定时器和一些标志变量，便能够模拟用户的一些操作，这样，调试者不用自己操作机器，可以让程序自动执行应用程序里规定好的操作，并重复多次。
+                2，因为调试应用程序中，可能外部顶层的硬件模块并没有调试好，应此不能通过串口接收到实际的数据，因此为了调试程序的逻辑正确性，用户可以自己模拟相关的数据。这种模拟有两种方式：一是在应用程序内部利用数组组成模拟数据，在程序中调用；另一种是将数据放在文件中，然后在程序里面打开文件读取数据。两种方法各有好处，第一种就是方便，第二种就是替换数据方便，用于大量数据的情况。
+                3，利用printf来调试。其实这是个很简单但是也是运用很灵活的方法，出了可以在printf中添加很多自己定义的变量来显示当前该条printf所处的各种状态，其实还可以利用标准C里面的预定义标志符来显示一些很有用的信息，如下：
+                        __LINE__ %d 包含当前源文件行数的十进制变量；
+                        __FILE__ %s 包含正在编译的源文件名字的字符串字面值；
+                        __DATE__ %s 包含编译日期的字符串字面值，其形式为：Mmm dd yyy。
+                        __TIME__ %s 包含编译时间的字符串字面值，其形式为：hh:mm:ss。
+                        __STDC__ %d 整型变量1。只有在遵循标准的实现中该标识符才被定义为1。
+                   利用这些编译器运预定义的常量，便可以很方便的打印一些很好的消息。
+                   比如：printf("%s:%d\n", __FILE__, __LINE__)，便可以很快定位到这条语句所在的文件和行数。
+                4，对于实时性的要求，比如monitor中的波形刷新，需要在程序中查看代码执行所在的时间。
+                   其实，对于大尺度的时间查看可以使用time、localtime等函数来度量，但是对于一些小尺度的时间测量，则可以使用jiffes计数器。
+                   具体可以查看《Linux设备驱动程序》183页的说明。
