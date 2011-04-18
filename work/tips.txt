@@ -1,0 +1,7 @@
+1. int (*ff(int)) (int *, int); //表示ff是一个函数指针，这个函数有一个int参数，同
+   //时返回一个函数指针，指向一个函数，这个函数有两个参数，分别为int *和int，返回int
+2. #pragma 的多种用法。
+   #pragma pack(n)
+   #pragma message("msg here")
+   #pargma once
+   #pargma warning(disable:22 33; once: 2323; error:122)
