@@ -1,8 +1,0 @@
-doc/Requirement_analysis.txt
-src/BaseType.h
-src/CBaseData.cpp
-src/CBaseData.h
-src/CModePara.h
-src/CMonitorData.cpp
-src/CMonitorData.h
-src/main.cpp
