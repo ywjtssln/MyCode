@@ -1,0 +1,36 @@
+CC = gcc
+INCLUDES = -I $(PWD)/include -I $(PWD)/logic -I $(PWD)/tran
+CFLAGS = -Wall -g -O2
+export CC
+export INCLUDES
+export CFLAGS
+LIBS = -lminigui -lmgext -lpthread -ljpeg -lpng
+RM = rm -f
+
+default:
+	cd ./tran/ && $(MAKE)
+	cd ./logic/ && $(MAKE)
+	cd ./gui/ && $(MAKE)
+	$(CC) $(LIBS) ./tran/tran_init.o ./tran/tran_bell.o ./tran/tran_com_handler.o ./tran/tran_com.o ./logic/logic_init.o ./logic/logic_data_handler.o ./logic/logic_demo.o ./logic/logic_alarm.o ./gui/gui_init.o ./gui/gui_mainwin.o ./gui/gui_wavewin.o ./gui/gui_setwin.o ./gui/gui_loopwin.o ./gui/bmpfont.o -o ana
+	mv ana ../
+
+clean:
+	cd ./tran/ && $(MAKE) clean
+	cd ./logic/ && $(MAKE) clean
+	cd ./gui/ && $(MAKE) clean
+	$(RM) *.o ana
+
+up:
+	svn up
+
+GUI:
+	./sh/svnversion.sh
+	cd ./gui/ && $(MAKE)
+
+LOGIC:
+	cd ./logic/ && $(MAKE)
+
+TRAN:
+	cd ./tran/ && $(MAKE)
+
+
