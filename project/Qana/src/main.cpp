@@ -2,6 +2,7 @@
 #include "CMonitorData.h"
 
 using namespace ven_name; 
+using namespace std; 
 
 int main(int argc, char **argv){
 	CMonitorData data;
@@ -14,6 +15,8 @@ int main(int argc, char **argv){
 	};
 	CWaveData wavetmp;
 	int t = 0;
+
+	
 
 	cout<<"hope to see this...."<<endl;
 	while(t < 5){

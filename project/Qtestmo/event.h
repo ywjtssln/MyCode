@@ -1,3 +1,42 @@
+/* This file is the header of event.cpp */
+/* 2011.4.22 V1.0 by zy */
+
+/* In order to use libtesmo.so, we have to include "event.h", and using name */
+/* space tesmo_name. Please pay attention to the class CByteInfo and the mem */
+/* bers in it, that's enough for you to create a new class CEPackage.  */
+
+#if 0
+this is an example: 
+
+#include "event.h"
+
+using namespace tesmo_name;
+
+int main(int argc, char **argv){
+
+	V_BYTE byte;
+	L_CBYTE_INFO info;
+	CStaticMethod sta = { 0x55 };
+	CStaticMethod stb = { 0xaa };
+	CStepMethod stp = { 0x10, 0xaa, 3, OVERFLOW_LOOP };
+	CSumMethod sum = { 0, 2 };
+	CByteInfo c0= { 0x12, METHOD_STATIC, (void *)&sta};
+	CByteInfo c1= { 0x10, METHOD_STEP, (void *)&stb};
+	CByteInfo c2= { 0x10, METHOD_STEP, (void *)&stp};
+	CByteInfo c3= { 0x78, METHOD_SUM, (void *)&sum};
+
+	info.push_back(c0);
+	info.push_back(c1);
+	info.push_back(c2);
+	info.push_back(c3);
+
+	CEPackage cp(info);
+	cp.get(byte);
+
+	......use byte ......
+
+#endif
+
 #ifndef _EVENT_H_
 #define _EVENT_H_
 
@@ -12,19 +51,22 @@ namespace tesmo_name {
 class CByteInfo;
 class CEMethod;
 
+/* 8bit as a byte */
 typedef unsigned char BYTE;
+/* force to other class for information */
 typedef void * METHOD_INFO;
+/* be used to init CEPackage */
 typedef list <CByteInfo> L_CBYTE_INFO;
+/* be used within CEPackage, can be skipped */
 typedef list <CEMethod *> L_CEMETHOD;
+/* vector of byte */
 typedef vector <BYTE> V_BYTE;
 
+/* if here has some more method, first change here. */
 enum METHOD_ID { METHOD_STATIC = 0, METHOD_STEP, METHOD_SUM };
 
+/* be used for METHOD_STEP. */
 enum OVERFLOW_FLAG { OVERFLOW_LOOP, OVERFLOW_STOP };
-
-enum RETURN_VALUE { RETURN_PARA_ERROR = -2, RETURN_ERROR, RETURN_OK, 
-	RETURN_OVERFLOW };
-
 
 
 /* use to define static method info */
@@ -38,6 +80,8 @@ class CStepMethod {
 public:
 	BYTE step_start;
 	BYTE step_stop;
+	/* step > 0  means add step */
+	/* step < 0  means subtract step */
 	int step;
 	OVERFLOW_FLAG flag;
 };
@@ -45,7 +89,9 @@ public:
 /* use to define sum method info */
 class CSumMethod {
 public:
+	/* byte begin with pos 0 */
 	int sum_start;
+	/* stop pos is used for sum too. */
 	int sum_stop;
 
 };
@@ -53,6 +99,7 @@ public:
 /* use to init relatived info */
 class CByteInfo {
 public:
+	/* Initiation of each byte. use fuction "next()" change values. */
 	BYTE byte;
 	METHOD_ID id;
 	METHOD_INFO info; 

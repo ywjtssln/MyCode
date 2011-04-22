@@ -1,6 +1,5 @@
-all:
-	g++ -c event.cpp event.h cinterface.cpp
-	g++ -shared -fPIC -o libtesmo.so event.o cinterface.o
+lib:
+	g++ -shared -fPIC -o libtesmo.so event.cpp
 
 test:
 	gcc test.c -o test -lstdc++ -L. -ltesmo

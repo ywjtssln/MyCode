@@ -207,3 +207,4 @@ void CMonitorData::pushWaveData(const CWaveData &cdata)
 	}
 
 }
+
