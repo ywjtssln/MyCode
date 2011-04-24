@@ -80,8 +80,8 @@ class CStepMethod {
 public:
 	BYTE step_start;
 	BYTE step_stop;
-	/* step > 0  means add step */
-	/* step < 0  means subtract step */
+	/* step > 0  means to add step */
+	/* step < 0  means to subtract step */
 	int step;
 	OVERFLOW_FLAG flag;
 };

@@ -124,7 +124,7 @@ CESumMethod::CESumMethod(const CSumMethod *m) : CEMethod(METHOD_SUM)
 void CESumMethod::next(V_BYTE &b, V_BYTE::size_type pos)
 {
 	BYTE tmp = 0;
-	int i = sum_start;
+	unsigned int i = sum_start;
 
 	for(; i <= sum_stop; i++)
 		tmp += b[i];
@@ -163,15 +163,16 @@ void CEPackage::addInfo(L_CBYTE_INFO::const_iterator iter)
 	v_byte.push_back(iter->byte);
 
 	switch(iter->id){
-		case METHOD_STATIC:
-			cem = new CEStaticMethod( (CStaticMethod *) (iter->info) );
-			break;
 		case METHOD_STEP:
 			cem = new CEStepMethod( (CStepMethod *) (iter->info) );
 			break;
 		case METHOD_SUM:
 			cem = new CESumMethod( (CSumMethod *) (iter->info) );
 			cem->next(v_byte, v_byte.size() - 1);
+			break;
+		/* default consider as METHOD_STATIC */
+		default:      
+			cem = new CEStaticMethod( (CStaticMethod *) (iter->info) );
 			break;
 	}
 
