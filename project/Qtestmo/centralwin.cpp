@@ -2,26 +2,36 @@
 
 CentralWin::CentralWin()
 {
-	setStyleSheet("* { background: blue}");
-#if 0
-	vl = new QVBoxLayout();
-	central_win = new QStackedWidget(this);
-	tool_button = new ToolButton();
+	sendp = new SendPage();
+	listenp = new ListenPage();
+	settingp = new SettingPage();
+	helpp = new HelpPage();
+	
+	addWidget(sendp);
+	addWidget(listenp);
+	addWidget(settingp);
+	addWidget(helpp);
 
-	central_win->setStyleSheet("* { background: blue}");
-	central_win->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	tool_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	tool_button->setStyleSheet("* { background: green}");
-	tool_button->setFixedHeight(100);
+	setCurrentWidget(sendp);
 
-	vl->setContentsMargins(0, 0, 0, 0);
-	vl->setSpacing(0);
-	vl->addWidget(central_win);
-	vl->addWidget(tool_button);
+}
 
-	setLayout(vl);
+void CentralWin::setSendPage()
+{
+	setCurrentWidget(sendp);
+}
 
-#endif
+void CentralWin::setListenPage()
+{
+	setCurrentWidget(listenp); 
+}
 
+void CentralWin::setSettingPage()
+{
+	setCurrentWidget(settingp); 
+}
 
+void CentralWin::setHelpPage()
+{
+	setCurrentWidget(helpp); 
 }

@@ -12,11 +12,22 @@ public:
 class CTesmo : public QMainWindow {
 	Q_OBJECT
 private:
-	QListWidget *dock_list1;
-	QListWidget *dock_list2;
+	QListWidget *send_list;
+	QListWidget *listen_list;
+	QDockWidget *dock;
 	QToolBar *tool_bar;
 	QToolBar *tool_bar_down;
 	CentralWin *central_win;
+
+	QAction *send;
+	QAction *listen;
+	QAction *setting;
+	QAction *help;
+
+private slots:
+	void topListenDock(); 
+	void topSendDock(); 
+
 
 public:
 	CTesmo();

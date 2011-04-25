@@ -4,18 +4,26 @@
 #include <QtGui>
 #include "toolbarwin.h"
 #include "toolbutton.h"
+#include "sendpage.h"
+#include "listenpage.h"
+#include "settingpage.h"
+#include "helppage.h"
 
 
 class CentralWin : public QStackedWidget {
 	Q_OBJECT
 private:
-
-#if 0
 	SendPage *sendp;
 	ListenPage *listenp;
 	SettingPage *settingp;
 	HelpPage *helpp;
-#endif 
+
+private slots:
+	void setSendPage();  
+	void setListenPage();
+	void setSettingPage();  
+	void setHelpPage(); 
+
 public:
 	CentralWin();
 
