@@ -2,41 +2,77 @@
 
 SendSet::SendSet()
 {
-	QLabel *lname = new QLabel(tr("Name"));
-	QLabel *llenth = new QLabel(tr("Lenth"));
-	QLabel *linterval = new QLabel(tr("Interval"));
-	hl = new QGridLayout;
-	le_name = new QLineEdit;
-	sb_lenth = new QSpinBox();
-	sb_interval = new QSpinBox;
-	//bg_radio = new QButtonGroup;
-	gb_radio = new QGroupBox(tr("method"));
-	rb_static = new QRadioButton("static");
-	rb_step = new QRadioButton("step");
-	rb_sum = new QRadioButton("sum");
-	QVBoxLayout *vl = new QVBoxLayout;
+	setupUi(this);
 
-	rb_static->setChecked(true);
+	connect(r_static, SIGNAL(clicked()), this, SLOT(setStatic()));
+	connect(r_step, SIGNAL(clicked()), this, SLOT(setStep()));
+	connect(r_sum, SIGNAL(clicked()), this, SLOT(setSum()));
+	connect(pb_add, SIGNAL(clicked()), this, SLOT(add_clicked()));
+	connect(pb_save, SIGNAL(clicked()), this, SLOT(save_clicked()));
+	connect(le_name, SIGNAL(editingFinished()), this, SLOT(edit_name()));
+	connect(sb_lenth, SIGNAL(valueChanged(int)), this, SLOT(edit_lenth()));
+	connect(sb_interval, SIGNAL(valueChanged(int)), this, SLOT(edit_interval()));
 
-	vl->addWidget(rb_static);
-	vl->addWidget(rb_step);
-	vl->addWidget(rb_sum);
+	updateCurrentPackage();
+	
+}
 
-	vl->addStretch(1);
-	gb_radio->setLayout(vl);
+void SendSet::setStatic()
+{
+	st_set->setCurrentWidget(static_page);
+}
 
-	sb_lenth->setRange(0, 100);
-	sb_interval->setRange(0, 2000);
-	sb_interval->setSingleStep(10);
+void SendSet::setStep()
+{
+	st_set->setCurrentWidget(step_page);
+}
 
-	hl->addWidget(lname, 0, 0, 1, 1);
-	hl->addWidget(le_name, 0, 1, 1, 8);
-	hl->addWidget(llenth, 1, 0, 1, 1);
-	hl->addWidget(sb_lenth, 1, 1);
-	hl->addWidget(linterval, 1, 2, 1, 1);
-	hl->addWidget(sb_interval, 1, 3);
-	hl->addWidget(gb_radio, 2, 0);
+void SendSet::setSum()
+{
+	st_set->setCurrentWidget(sum_page);
+}
 
-	setLayout(hl);
+void SendSet::add_clicked()
+{
+	emit addPackage();
+}
+
+void SendSet::save_clicked()
+{
+	emit savePackage(pack_now);
+}
+
+void SendSet::edit_name()
+{
+	pack_now.name = le_name->text();
 
 }
+
+
+void SendSet::edit_lenth()
+{
+	pack_now.num = sb_lenth->value();
+
+}
+
+void SendSet::edit_interval()
+{
+	pack_now.interval_ms = sb_interval->value();
+
+}
+
+
+void SendSet::updateCurrentPackage()
+{
+	le_name->setText(QString(pack_now.name));
+	sb_lenth->setValue(pack_now.num);
+	sb_interval->setValue(pack_now.interval_ms);
+
+}
+
+void SendSet::packageChanged(SendPackage &pack)
+{
+	pack_now = pack;
+	updateCurrentPackage();
+}
+

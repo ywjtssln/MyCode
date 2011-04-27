@@ -2,23 +2,33 @@
 #define _SEND_SET_H_
 
 #include <QtGui>
+#include "ui_sendset.h"
+#include "sendpack.h"
 
-class SendSet : public QWidget {
+
+class SendSet : public QWidget , private Ui::SendSet {
 	Q_OBJECT
 private:
-	QGridLayout *hl;
-	QGroupBox *gb_radio;
-	QButtonGroup *bg_radio;
-	QLineEdit *le_name;
-	QSpinBox *sb_lenth;
-	QSpinBox *sb_interval;
-	QRadioButton *rb_static;
-	QRadioButton *rb_step;
-	QRadioButton *rb_sum;
+	SendPackage pack_now;
+	void updateCurrentPackage();
 
 public:
-	SendSet();
+	explicit SendSet();
+	void packageChanged(SendPackage &);
 
+public slots:
+	void setStatic();
+	void setStep();
+	void setSum();
+	void add_clicked();
+	void save_clicked();
+	void edit_name();
+	void edit_lenth();
+	void edit_interval();
+
+signals:
+	void addPackage();
+	void savePackage(SendPackage &);
 };
 
 

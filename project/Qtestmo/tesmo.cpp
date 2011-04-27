@@ -46,7 +46,7 @@ CTesmo::CTesmo()
 	connect(setting, SIGNAL(triggered()), central_win, SLOT(setSettingPage()));
 	connect(help, SIGNAL(triggered()), central_win, SLOT(setHelpPage()));
 
-	setGeometry(100, 100, 600, 400);
+	setGeometry(100, 100, 800, 500);
 
 
 	setCentralWidget(central_win);
