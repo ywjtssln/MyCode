@@ -15,6 +15,7 @@ private:
 public:
 	explicit SendSet();
 	void packageChanged(SendPackage &);
+	void isPackage(bool);
 
 public slots:
 	void setStatic();
@@ -22,6 +23,7 @@ public slots:
 	void setSum();
 	void add_clicked();
 	void save_clicked();
+	void del_clicked();
 	void edit_name();
 	void edit_lenth();
 	void edit_interval();
@@ -29,6 +31,7 @@ public slots:
 signals:
 	void addPackage();
 	void savePackage(SendPackage &);
+	void delPackage();
 };
 
 

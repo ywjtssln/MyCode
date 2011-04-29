@@ -17,8 +17,9 @@ private:
 	vector <SendPackage> sendpack_vec;
 
 private slots:
-	void currentPackageChanged(int);
+	void currentPackageChanged(QListWidgetItem *);
 	void addPackageRow();
+	void delPackageRow();
 	void savePackageInfo(SendPackage &);
 
 public:

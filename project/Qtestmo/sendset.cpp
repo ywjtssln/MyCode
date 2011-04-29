@@ -9,6 +9,7 @@ SendSet::SendSet()
 	connect(r_sum, SIGNAL(clicked()), this, SLOT(setSum()));
 	connect(pb_add, SIGNAL(clicked()), this, SLOT(add_clicked()));
 	connect(pb_save, SIGNAL(clicked()), this, SLOT(save_clicked()));
+	connect(pb_del, SIGNAL(clicked()), this, SLOT(del_clicked()));
 	connect(le_name, SIGNAL(editingFinished()), this, SLOT(edit_name()));
 	connect(sb_lenth, SIGNAL(valueChanged(int)), this, SLOT(edit_lenth()));
 	connect(sb_interval, SIGNAL(valueChanged(int)), this, SLOT(edit_interval()));
@@ -40,6 +41,11 @@ void SendSet::add_clicked()
 void SendSet::save_clicked()
 {
 	emit savePackage(pack_now);
+}
+
+void SendSet::del_clicked()
+{
+	emit delPackage();
 }
 
 void SendSet::edit_name()
@@ -74,5 +80,13 @@ void SendSet::packageChanged(SendPackage &pack)
 {
 	pack_now = pack;
 	updateCurrentPackage();
+}
+
+void SendSet::isPackage(bool f)
+{
+	qDebug()<<"is package"<<f;
+
+	pb_save->setDisabled(!f);
+	pb_del->setDisabled(!f);
 }
 
