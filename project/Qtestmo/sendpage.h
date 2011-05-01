@@ -18,6 +18,8 @@ private:
 
 private slots:
 	void currentPackageChanged(QListWidgetItem *);
+	void currentPackageChanged(int);
+	void currentPackageChanged(QListWidgetItem *, QListWidgetItem *);
 	void addPackageRow();
 	void delPackageRow();
 	void savePackageInfo(SendPackage &);
