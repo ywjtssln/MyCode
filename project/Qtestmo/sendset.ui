@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>423</width>
+    <height>317</height>
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
@@ -20,6 +20,12 @@
    <size>
     <width>320</width>
     <height>20</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>656</width>
+    <height>317</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -52,10 +58,32 @@
    </item>
    <item row="4" column="0" colspan="3">
     <widget class="QGroupBox" name="groupBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="title">
       <string>Method</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <spacer name="verticalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>2</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
       <item>
        <widget class="QRadioButton" name="r_static">
         <property name="text">
@@ -124,7 +152,7 @@
      </property>
      <property name="sizeHint" stdset="0">
       <size>
-       <width>200</width>
+       <width>40</width>
        <height>20</height>
       </size>
      </property>
@@ -167,7 +195,7 @@
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>30</height>
+       <height>55</height>
       </size>
      </property>
     </spacer>
@@ -198,10 +226,7 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="2">
-         <widget class="QLineEdit" name="le_static"/>
-        </item>
-        <item row="0" column="3">
+        <item row="0" column="4">
          <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -227,6 +252,25 @@
           </property>
          </spacer>
         </item>
+        <item row="0" column="2">
+         <widget class="QLineEdit" name="le_static"/>
+        </item>
+        <item row="1" column="2">
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>30</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
        </layout>
       </widget>
      </widget>
@@ -239,6 +283,12 @@
          <width>251</width>
          <height>161</height>
         </rect>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
        <property name="title">
         <string>Step setting</string>
@@ -324,12 +374,12 @@
          <widget class="QComboBox" name="cb_over">
           <item>
            <property name="text">
-            <string>STOP</string>
+            <string>LOOP</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>LOOP</string>
+            <string>STOP</string>
            </property>
           </item>
          </widget>

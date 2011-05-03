@@ -12,6 +12,11 @@ public:
 	unsigned int id;
 	unsigned int num;
 	unsigned int interval_ms;
+
+	vector <int> method_m;
+	vector <CStaticMethod> static_m;
+	vector <CStepMethod> step_m;
+	vector <CSumMethod> sum_m;
 	L_CBYTE_INFO l_info;
 
 	SendPackage();

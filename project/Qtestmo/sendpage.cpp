@@ -9,7 +9,6 @@ SendPage::SendPage() : QSplitter(Qt::Vertical, 0)
 	connect(send_list, SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(currentPackageChanged(QListWidgetItem *)));
 	connect(send_list, SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(currentPackageChanged(QListWidgetItem *)));
 	connect(send_list, SIGNAL(currentRowChanged(int)), this, SLOT(currentPackageChanged(int)));
-	connect(send_list, SIGNAL(currentItemChanged(QListWidgetItem *, QListWidgetItem *)), this, SLOT(currentPackageChanged(QListWidgetItem *, QListWidegtItem *)));
 	connect(send_set, SIGNAL(addPackage()), this, SLOT(addPackageRow()));
 	connect(send_set, SIGNAL(savePackage(SendPackage &)), this, SLOT(savePackageInfo(SendPackage &)));
 	connect(send_set, SIGNAL(delPackage()), this, SLOT(delPackageRow()));
@@ -32,18 +31,6 @@ void SendPage::currentPackageChanged(int row)
 
 }
 
-void SendPage::currentPackageChanged(QListWidgetItem *item, QListWidgetItem *itempre)
-{
-	int row = send_list->row(item);
-
-	qDebug()<<"2CHG row "<<row; 
-	if(row >= 0 && (unsigned int)row < sendpack_vec.size()){
-		send_set->packageChanged(sendpack_vec.at(row));
-	}
-
-
-	qDebug()<<"2CHG current row "<<send_list->currentRow(); 
-}
 
 void SendPage::currentPackageChanged(QListWidgetItem *item)
 {
@@ -83,6 +70,7 @@ void SendPage::savePackageInfo(SendPackage &pack)
 	int row = send_list->row((send_list->selectedItems()).last());
 
 	sendpack_vec.at(row) = pack;
+	send_list->item(row)->setText(pack.name);
 
 	qDebug()<<"SAVE current row "<<send_list->currentRow(); 
 }

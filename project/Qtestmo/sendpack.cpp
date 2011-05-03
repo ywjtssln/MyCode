@@ -9,6 +9,11 @@ SendPackage::SendPackage()
 	id = 0;
 	num = 0;
 	interval_ms = 0;
+
+	method_m.resize(20);
+	static_m.resize(20);
+	step_m.resize(20);
+	sum_m.resize(20);
 }
 
 SendPackage::SendPackage(unsigned int d)
