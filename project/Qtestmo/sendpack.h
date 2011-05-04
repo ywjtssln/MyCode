@@ -13,6 +13,7 @@ public:
 	unsigned int num;
 	unsigned int interval_ms;
 
+	vector <BYTE> data_m;
 	vector <int> method_m;
 	vector <CStaticMethod> static_m;
 	vector <CStepMethod> step_m;
@@ -21,7 +22,8 @@ public:
 
 	SendPackage();
 	SendPackage(unsigned int);
-	SendPackage(const QString &);
+
+	void operator = (SendPackage &);
 
 };
 

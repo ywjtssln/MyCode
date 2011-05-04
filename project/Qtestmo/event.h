@@ -66,7 +66,7 @@ typedef vector <BYTE> V_BYTE;
 enum METHOD_ID { METHOD_STATIC = 0, METHOD_STEP, METHOD_SUM };
 
 /* be used for METHOD_STEP. */
-enum OVERFLOW_FLAG { OVERFLOW_LOOP, OVERFLOW_STOP };
+enum OVERFLOW_FLAG { OVERFLOW_LOOP = 0, OVERFLOW_STOP };
 
 
 /* use to define static method info */

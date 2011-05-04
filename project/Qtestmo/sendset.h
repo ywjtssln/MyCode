@@ -25,6 +25,7 @@ class SendSet : public QWidget , private Ui::SendSet {
 	Q_OBJECT
 private:
 	SendPackage pack_now;
+	int line_now;
 	MyLineEdit *lined[20];
 	void updateCurrentPackage();
 
@@ -32,6 +33,7 @@ public:
 	explicit SendSet();
 	void packageChanged(SendPackage &);
 	void isPackage(bool);
+	void setByte(vector <BYTE> &);
 
 public slots:
 	void setStatic();
@@ -50,6 +52,9 @@ public slots:
 	void edit_step_end();
 	void edit_sum_start();
 	void edit_sum_end();
+	void edit_over(int);
+	void edit_inc();
+	void edit_dec();
 
 signals:
 	void addPackage();

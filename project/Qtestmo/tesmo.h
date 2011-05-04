@@ -4,9 +4,9 @@
 #include <QtGui>
 #include "centralwin.h"
 
-class Mytoolbutton :public QToolButton {
+class MyToolbutton : public QToolButton {
 public:
-	Mytoolbutton();
+	MyToolbutton();
 };
 
 class CTesmo : public QMainWindow {
@@ -19,6 +19,8 @@ private:
 	QToolBar *tool_bar_down;
 	CentralWin *central_win;
 
+	QPushButton *play_pause;
+	QPushButton *stop;
 	QAction *send;
 	QAction *listen;
 	QAction *setting;
@@ -27,7 +29,8 @@ private:
 private slots:
 	void topListenDock(); 
 	void topSendDock(); 
-
+	void nextPackage();
+	void resetPackage();
 
 public:
 	CTesmo();

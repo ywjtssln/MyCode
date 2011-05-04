@@ -26,6 +26,14 @@ SendSet::SendSet()
 		connect(lined[j], SIGNAL(focusChanged(int)), this, SLOT(byteInfoChanged(int)));
 	}
 
+
+	le_static->setInputMask("\\0\\xHH");
+	le_step_step->setInputMask("\\0\\xHH");
+	le_step_start->setInputMask("\\0\\xHH");
+	le_step_end->setInputMask("\\0\\xHH");
+	le_sum_start->setInputMask("\\0\\xHH");
+	le_sum_end->setInputMask("\\0\\xHH");
+
 	connect(r_static, SIGNAL(clicked()), this, SLOT(setStatic()));
 	connect(r_step, SIGNAL(clicked()), this, SLOT(setStep()));
 	connect(r_sum, SIGNAL(clicked()), this, SLOT(setSum()));
@@ -41,44 +49,76 @@ SendSet::SendSet()
 	connect(le_step_end, SIGNAL(editingFinished()), this, SLOT(edit_step_end()));
 	connect(le_sum_start, SIGNAL(editingFinished()), this, SLOT(edit_sum_start()));
 	connect(le_sum_end, SIGNAL(editingFinished()), this, SLOT(edit_sum_end()));
+	connect(cb_over, SIGNAL(currentIndexChanged(int)), this, SLOT(edit_over(int)));
+	connect(r_inc, SIGNAL(clicked()), this, SLOT(edit_inc()));
+	connect(r_dec, SIGNAL(clicked()), this, SLOT(edit_dec()));
 
 	updateCurrentPackage();
 	
 }
 
+void SendSet::setByte(vector <BYTE> &vec)
+{
+	pack_now.data_m = vec;
+}
+
 void SendSet::setStatic()
 {
 	st_set->setCurrentWidget(static_page);
+	pack_now.method_m[line_now] = METHOD_STATIC;
 }
 
 void SendSet::setStep()
 {
 	st_set->setCurrentWidget(step_page);
+	pack_now.method_m[line_now] = METHOD_STEP;
 }
 
 void SendSet::setSum()
 {
 	st_set->setCurrentWidget(sum_page);
+	pack_now.method_m[line_now] = METHOD_SUM;
 }
 
 void SendSet::byteInfoChanged(int i)
 {
+	QString *str = new QString("Method ");
+	line_now = i;
+
+	qDebug()<<"byte changed "<<i;
+
+	str->push_back(QVariant(i).toString());
+
+	le_static->setText(QString::number(pack_now.static_m[i].static_byte, 16));
+
+	if(pack_now.step_m[i].step >= 0){
+		le_step_step->setText(QString::number(pack_now.step_m[i].step, 16));
+		r_inc->setChecked(true);
+	} else {
+		le_step_step->setText(QString::number(abs(pack_now.step_m[i].step), 16));
+		r_dec->setChecked(true);
+	}
+
+	le_step_start->setText(QString::number(pack_now.step_m[i].step_start, 16));
+	le_step_end->setText(QString::number(pack_now.step_m[i].step_stop, 16));
+	cb_over->setCurrentIndex(pack_now.step_m[i].flag);
+
+	le_sum_start->setText(QString::number(pack_now.sum_m[i].sum_start, 16));
+	le_sum_end->setText(QString::number(pack_now.sum_m[i].sum_stop, 16));
+
+	groupBox->setTitle(*str);
 	switch (pack_now.method_m[i]){
 		case METHOD_STATIC:
 			r_static->setChecked(true);
-			le_static->setText(QVariant(pack_now.static_m[i].static_byte).toString());
+			setStatic();
 			break;
 		case METHOD_STEP:
 			r_step->setChecked(true);
-			le_step_step->setText(QVariant(pack_now.step_m[i].step).toString());
-			le_step_start->setText(QVariant(pack_now.step_m[i].step_start).toString());
-			le_step_end->setText(QVariant(pack_now.step_m[i].step_stop).toString());
-			cb_over->setCurrentIndex(pack_now.step_m[i].flag);
+			setStep();
 			break;
 		case METHOD_SUM:
 			r_sum->setChecked(true);
-			le_sum_start->setText(QVariant(pack_now.sum_m[i].sum_start).toString());
-			le_sum_end->setText(QVariant(pack_now.sum_m[i].sum_stop).toString());
+			setSum();
 			break;
 	}
 
@@ -114,6 +154,7 @@ void SendSet::edit_lenth()
 		if(i < pack_now.num){
 			lined[i]->setInputMask("\\0\\xHH");
 			lined[i]->setDisabled(false);
+			lined[i]->setText(QString::number(pack_now.data_m[i], 16));
 		}
 		else{
 			lined[i]->setInputMask(NULL);
@@ -121,6 +162,8 @@ void SendSet::edit_lenth()
 			lined[i]->setDisabled(true);
 		}
 	}
+
+	byteInfoChanged(0);
 
 }
 
@@ -130,30 +173,103 @@ void SendSet::edit_interval()
 
 }
 
-void SendSet::edit_static(){
+void SendSet::edit_static()
+{
+	bool f;
+	unsigned short v = QString(le_static->text()).toUShort(&f, 16);
+
+	if(focusWidget() == le_static){
+		pack_now.static_m[line_now].static_byte = v;
+		pack_now.data_m[line_now] = v;
+		le_static->selectAll();
+		lined[line_now]->setText(QString::number(pack_now.static_m[line_now].static_byte, 16));
+	}
 
 }
 
-void SendSet::edit_step_start(){
+void SendSet::edit_step_start()
+{
+	bool f;
+	unsigned short v = QString(le_step_start->text()).toUShort(&f, 16);
+
+	if(focusWidget() == le_step_start){
+		pack_now.step_m[line_now].step_start= v;
+		pack_now.data_m[line_now] = v;
+		le_step_start->selectAll();
+		lined[line_now]->setText(QString::number(pack_now.step_m[line_now].step_start, 16));
+	}
 
 }
 
 
-void SendSet::edit_step_step(){
+void SendSet::edit_step_step()
+{
+	bool f;
+	unsigned short v = QString(le_step_step->text()).toUShort(&f, 16);
+
+	if(focusWidget() == le_step_step){
+		if(r_inc->isChecked())
+			pack_now.step_m[line_now].step= v;
+		else
+			pack_now.step_m[line_now].step= -v;
+
+		le_step_step->selectAll();
+	}
 
 }
 
-void SendSet::edit_step_end(){
+void SendSet::edit_step_end()
+{
+	bool f;
+	unsigned short v = QString(le_step_end->text()).toUShort(&f, 16);
+
+	if(focusWidget() == le_step_end){
+		pack_now.step_m[line_now].step_stop = v;
+		le_step_end->selectAll();
+	}
 
 }
 
-void SendSet::edit_sum_start(){
+void SendSet::edit_over(int f)
+{
+	pack_now.step_m[line_now].flag = static_cast<OVERFLOW_FLAG>(f);
 
 }
 
-void SendSet::edit_sum_end(){
+void SendSet::edit_inc()
+{
+	pack_now.step_m[line_now].step = abs(pack_now.step_m[line_now].step);
+}
+
+void SendSet::edit_dec()
+{
+	pack_now.step_m[line_now].step = - abs(pack_now.step_m[line_now].step);
+}
+
+void SendSet::edit_sum_start()
+{
+	bool f;
+	unsigned short v = QString(le_sum_start->text()).toUShort(&f, 16);
+
+	if(focusWidget() == le_sum_start){
+		pack_now.sum_m[line_now].sum_start = v;
+		le_sum_start->selectAll();
+	}
 
 }
+
+void SendSet::edit_sum_end()
+{
+	bool f;
+	unsigned short v = QString(le_sum_end->text()).toUShort(&f, 16);
+
+	if(focusWidget() == le_sum_end){
+		pack_now.sum_m[line_now].sum_start = v;
+		le_sum_end->selectAll();
+	}
+
+}
+
 
 void SendSet::updateCurrentPackage()
 {
