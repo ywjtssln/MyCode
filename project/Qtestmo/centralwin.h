@@ -23,6 +23,8 @@ private slots:
 	void setListenPage();
 	void setSettingPage();  
 	void setHelpPage(); 
+	void nextSendPackage();
+	void resetSendPackage();
 
 public:
 	CentralWin();

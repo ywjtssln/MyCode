@@ -1,8 +1,12 @@
+#include <iostream>
 #include "sendpage.h"
+
 
 
 SendPage::SendPage() : QSplitter(Qt::Vertical, 0)
 {
+	pack = NULL;
+	time = new QTimer(this);
 	send_list = new QListWidget();
 	send_set = new SendSet();
 	
@@ -12,10 +16,10 @@ SendPage::SendPage() : QSplitter(Qt::Vertical, 0)
 	connect(send_set, SIGNAL(addPackage()), this, SLOT(addPackageRow()));
 	connect(send_set, SIGNAL(savePackage(SendPackage &)), this, SLOT(savePackageInfo(SendPackage &)));
 	connect(send_set, SIGNAL(delPackage()), this, SLOT(delPackageRow()));
+	connect(time, SIGNAL(timeout()), this, SLOT(play()));
 
 	addWidget(send_list);
 	addWidget(send_set);
-
 
 	addPackageRow();
 
@@ -40,7 +44,6 @@ void SendPage::currentPackageChanged(QListWidgetItem *item)
 	if(row >= 0 && (unsigned int)row < sendpack_vec.size()){
 		send_set->packageChanged(sendpack_vec.at(row));
 	}
-
 
 	qDebug()<<"CHG current row "<<send_list->currentRow(); 
 }
@@ -93,3 +96,34 @@ void SendPage::delPackageRow()
 
 	qDebug()<<"DEL current row "<<send_list->currentRow(); 
 }
+
+void SendPage::play()
+{
+	int i = send_list->currentRow();
+	if(i < 0)
+		return;
+
+	if(!pack){
+		sendpack_vec[i].refreshByteInfo();
+		pack = new CEPackage(sendpack_vec[i].l_info);
+	} else {
+		pack->get(sendpack_vec[i].data_m);
+		pack->next();
+	}
+
+	std::cout.flags(ios::hex);
+	for(vector<SendPackage>::size_type t = 0; t != sendpack_vec[i].num; ++t)
+		std::cout<<(unsigned short) sendpack_vec[i].data_m[t]<<" ";
+
+	std::cout<<endl;
+
+
+}
+
+
+void SendPage::reset()
+{
+
+}
+
+

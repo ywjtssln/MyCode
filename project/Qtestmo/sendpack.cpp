@@ -48,3 +48,30 @@ void SendPackage::operator = (SendPackage &pack)
 	l_info = pack.l_info;
 
 }
+
+void SendPackage::refreshByteInfo()
+{
+	CByteInfo info = {0, METHOD_STATIC, NULL};
+
+	l_info.clear();
+
+	for(unsigned int i = 0; i != num; ++i)
+	{
+		info.byte = data_m[i];
+		info.id = static_cast<METHOD_ID>(method_m[i]);
+		switch(info.id){
+			case METHOD_STATIC:
+				info.info = (void *) &(static_m[i]);
+				break;
+			case METHOD_STEP:
+				info.info = (void *) &(step_m[i]);
+				break;
+			case METHOD_SUM:
+				info.info = (void *) &(sum_m[i]);
+				break;
+		}
+		l_info.push_back(info);
+
+	}
+
+}

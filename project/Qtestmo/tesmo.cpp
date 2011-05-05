@@ -52,8 +52,8 @@ CTesmo::CTesmo()
 	connect(listen, SIGNAL(triggered()), this, SLOT(topListenDock()));
 	connect(setting, SIGNAL(triggered()), central_win, SLOT(setSettingPage()));
 	connect(help, SIGNAL(triggered()), central_win, SLOT(setHelpPage()));
-	connect(play_pause, SIGNAL(clicked()), this, SLOT(nextPackage()));
-	connect(stop, SIGNAL(clicked()), this, SLOT(resetPackage()));
+	connect(play_pause, SIGNAL(clicked()), central_win, SLOT(nextSendPackage()));
+	connect(stop, SIGNAL(clicked()), central_win, SLOT(resetSendPackage()));
 
 	setGeometry(100, 100, 800, 510);
 
@@ -77,13 +77,4 @@ void CTesmo::topListenDock()
 	dock->setWindowTitle("Listen Watch");
 }
 
-void CTesmo::nextPakcage()
-{
-
-}
-
-void CTesmo::resetPakcage()
-{
-
-}
 

@@ -22,6 +22,7 @@ public:
 
 	SendPackage();
 	SendPackage(unsigned int);
+	void refreshByteInfo();
 
 	void operator = (SendPackage &);
 

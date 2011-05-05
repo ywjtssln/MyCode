@@ -29,8 +29,6 @@ private:
 private slots:
 	void topListenDock(); 
 	void topSendDock(); 
-	void nextPackage();
-	void resetPackage();
 
 public:
 	CTesmo();

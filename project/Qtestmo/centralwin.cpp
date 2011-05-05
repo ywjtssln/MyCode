@@ -35,3 +35,13 @@ void CentralWin::setHelpPage()
 {
 	setCurrentWidget(helpp); 
 }
+
+void CentralWin::nextSendPackage()
+{
+	sendp->play();
+}
+
+void CentralWin::resetSendPackage()
+{
+
+}

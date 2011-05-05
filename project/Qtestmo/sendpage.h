@@ -22,9 +22,14 @@ private slots:
 	void addPackageRow();
 	void delPackageRow();
 	void savePackageInfo(SendPackage &);
+public slots:
+	void play();
 
 public:
+	CEPackage *pack;
+	QTimer *time;
 	SendPage();
+	void reset();
 
 };
 
